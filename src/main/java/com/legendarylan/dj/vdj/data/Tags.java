@@ -12,7 +12,18 @@ public class Tags {
     private String composer;
     private int year;
     private int flag;
+    private String remix;
+    private String remixer;
+    private String grouping;
+    private String user1;   // Might rename this later if I decide to use it for something
+    private String user2;   // Ditto
+    /* Unused attributes present in the XML
     private String trackNumber;
+    private int bpm;
+    private String key;
+    private String label;
+    private int stars;
+    */
 
     @XmlAttribute(name="Author")
     public String getAuthor() {
@@ -70,12 +81,44 @@ public class Tags {
         this.flag = flag;
     }
 
-    @XmlAttribute(name="TrackNumber")
-    public String getTrackNumber() {
-        return trackNumber;
+    @XmlAttribute(name="Remix")
+    public String getRemix() {
+        return remix;
     }
-    public void setTrackNumber(String trackNumber) {
-        this.trackNumber = trackNumber;
+    public void setRemix(String remix) {
+        this.remix = remix;
+    }
+
+    @XmlAttribute(name="Remixer")
+    public String getRemixer() {
+        return remixer;
+    }
+    public void setRemixer(String remixer) {
+        this.remixer = remixer;
+    }
+
+    @XmlAttribute(name="Grouping")
+    public String getGrouping() {
+        return grouping;
+    }
+    public void setGrouping(String grouping) {
+        this.grouping = grouping;
+    }
+
+    @XmlAttribute(name="User1")
+    public String getUser1() {
+        return user1;
+    }
+    public void setUser1(String user1) {
+        this.user1 = user1;
+    }
+
+    @XmlAttribute(name="User2")
+    public String getUser2() {
+        return user2;
+    }
+    public void setUser2(String user2) {
+        this.user2 = user2;
     }
 }
 

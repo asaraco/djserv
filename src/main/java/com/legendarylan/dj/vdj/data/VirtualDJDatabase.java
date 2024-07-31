@@ -12,20 +12,16 @@ public class VirtualDJDatabase {
     @XmlElement(name="Song")
     public List<Song> songs;
 
-
     public int getVersion() {
         return version;
     }
-
     public void setVersion(int version) {
         this.version = version;
     }
 
-
     public List<Song> getSongs() {
         return songs;
     }
-
     public void setSongs(List<Song> songs) {
         this.songs = songs;
     }

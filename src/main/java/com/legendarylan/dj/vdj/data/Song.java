@@ -2,12 +2,35 @@ package com.legendarylan.dj.vdj.data;
 
 import jakarta.xml.bind.annotation.*;
 
-public class Song {
-    private String filePath;
-    private String fileSize;
-    private Tags tags;
+import java.util.List;
 
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Song {
+    // Fields that exist in database.xml
     @XmlAttribute(name="FilePath")
+    public String filePath;
+    @XmlAttribute(name="FileSize")
+    public String fileSize;
+    @XmlElement(name="Tags")
+    public Tags tags;
+    @XmlAttribute(name="Flag")
+    public int flag;
+    @XmlElement(name="Infos")
+    public Infos infos;
+    @XmlElement(name="Comment")
+    public String comment;
+    @XmlElement(name="Poi")
+    public List<Poi> pois;
+    // Generated fields
+    private int id;
+    private static int idCounter = 0;
+
+    public Song() {
+        id = idCounter;
+        idCounter++;
+    }
+
+
     public String getFilePath() {
         return filePath;
     }
@@ -15,7 +38,7 @@ public class Song {
         this.filePath = filePath;
     }
 
-    @XmlAttribute(name="FileSize")
+
     public String getFileSize() {
         return fileSize;
     }
@@ -23,12 +46,47 @@ public class Song {
         this.fileSize = fileSize;
     }
 
-    @XmlElement(name="Tags")
+
     public Tags getTags() {
         return tags;
     }
-
     public void setTags(Tags tags) {
         this.tags = tags;
+    }
+
+
+    public int getFlag() {
+        return flag;
+    }
+    public void setFlag(int flag) {
+        this.flag = flag;
+    }
+
+
+    public Infos getInfos() {
+        return infos;
+    }
+    public void setInfos(Infos infos) {
+        this.infos = infos;
+    }
+
+
+    public String getComment() {
+        return comment;
+    }
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+
+    public List<Poi> getPois() {
+        return pois;
+    }
+    public void setPois(List<Poi> pois) {
+        this.pois = pois;
+    }
+
+    public int getId() {
+        return id;
     }
 }
