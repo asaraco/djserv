@@ -15,8 +15,8 @@ public class Tags {
     private String remix;
     private String remixer;
     private String grouping;
-    private String user1;   // Might rename this later if I decide to use it for something
-    private String user2;   // Ditto
+    private String crates;          // This is "User1" renamed
+    private String searchTerms;     // This is "User2" renamed
     /* Unused attributes present in the XML
     private String trackNumber;
     private int bpm;
@@ -106,19 +106,19 @@ public class Tags {
     }
 
     @XmlAttribute(name="User1")
-    public String getUser1() {
-        return user1;
+    public String getCrates() {
+        return crates;
     }
-    public void setUser1(String user1) {
-        this.user1 = user1;
+    public void setCrates(String crates) {
+        this.crates = crates;
     }
 
     @XmlAttribute(name="User2")
-    public String getUser2() {
-        return user2;
+    public String getSearchTerms() {
+        return searchTerms;
     }
-    public void setUser2(String user2) {
-        this.user2 = user2;
+    public void setSearchTerms(String searchTerms) {
+        this.searchTerms = searchTerms;
     }
 }
 

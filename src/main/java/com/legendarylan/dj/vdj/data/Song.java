@@ -30,7 +30,6 @@ public class Song {
         idCounter++;
     }
 
-
     public String getFilePath() {
         return filePath;
     }
