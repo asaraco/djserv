@@ -1,8 +1,10 @@
-package com.legendarylan.dj.mixxx.data;
+package com.legendarylan.dj.mixxx.controller;
 
 import java.util.ArrayList;
 
+import com.legendarylan.dj.mixxx.data.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.webmvc.BasePathAwareController;
@@ -16,18 +18,19 @@ import com.legendarylan.dj.Const;
 
 @BasePathAwareController
 @CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200"})
+@ConditionalOnProperty(prefix = "app.legendarydj", name = "mode", havingValue = "mixxx")
 class PlaylistTrackController {
 	@Autowired
-	TrackRepository library;
+    TrackRepository library;
 	
 	@Autowired
-	PlaylistRepository playlists;
+    PlaylistRepository playlists;
 	
 	@Autowired
-	PlaylistTrackRepository playlistTracks;
+    PlaylistTrackRepository playlistTracks;
 	
 	@Autowired
-	CrateRepository crates;
+    CrateRepository crates;
 	
 	@RequestMapping(path = "requestSong", method = RequestMethod.POST)
 	@ResponseBody
