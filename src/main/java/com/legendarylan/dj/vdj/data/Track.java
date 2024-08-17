@@ -103,6 +103,10 @@ public class Track {
         return this.tags.getAlbum();
     }
 
+    public Integer getRating() {
+        return this.tags.getStars();
+    }
+
     public String getGrouping() {
         if (this.filePath.contains("netsearch")) {
             return "[ONLINE DATABASE]";

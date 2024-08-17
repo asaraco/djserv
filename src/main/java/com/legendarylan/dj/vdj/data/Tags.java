@@ -14,6 +14,7 @@ public class Tags {
     private int flag;
     private String remix;
     private String remixer;
+    private int stars;
     private String grouping;
     private String crates;          // This is "User1" renamed
     private String searchTerms;     // This is "User2" renamed
@@ -22,7 +23,6 @@ public class Tags {
     private int bpm;
     private String key;
     private String label;
-    private int stars;
     */
 
     @XmlAttribute(name="Author")
@@ -96,6 +96,10 @@ public class Tags {
     public void setRemixer(String remixer) {
         this.remixer = remixer;
     }
+
+    @XmlAttribute(name="Stars")
+    public int getStars() { return stars;   }
+    public void setStars(int stars) {   this.stars = stars; }
 
     @XmlAttribute(name="Grouping")
     public String getGrouping() {
