@@ -20,16 +20,16 @@ public class XmlController {
     @Autowired
     private Jaxb2Marshaller marshaller;
 
+    private static File xmlDatabase = new File("C:\\Users\\lemmh\\_VDJ_backup\\database.xml");;
+
     @GetMapping("/getAllTracks")
     public List<Track> getAllTracks() throws FileNotFoundException {
-        File xmlDatabase = new File("C:\\Users\\lemmh\\_VDJ_backup\\database.xml");
         VirtualDJDatabase fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(xmlDatabase));
         return fulldb.getSongs();
     }
 
     @GetMapping("/getRatedTracks")
     public List<Track> getRatedTracks() throws FileNotFoundException {
-        File xmlDatabase = new File("C:\\Users\\lemmh\\_VDJ_backup\\database.xml");
         VirtualDJDatabase fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(xmlDatabase));
         List<Track> allTracks = fulldb.getSongs();
         return allTracks.stream().filter(e -> e.getRating()>0).toList();
@@ -37,9 +37,15 @@ public class XmlController {
 
     @GetMapping("/getRatedLocalTracks")
     public List<Track> getRatedLocalTracks() throws FileNotFoundException {
-        File xmlDatabase = new File("C:\\Users\\lemmh\\_VDJ_backup\\database.xml");
         VirtualDJDatabase fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(xmlDatabase));
         List<Track> allTracks = fulldb.getSongs();
         return allTracks.stream().filter(e -> e.getRating()>0 && !e.getFilePath().contains("netsearch")).toList();
+    }
+
+    @GetMapping("/getUnratedLocalTracks")
+    public List<Track> getUnratedLocalTracks() throws FileNotFoundException {
+        VirtualDJDatabase fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(xmlDatabase));
+        List<Track> allTracks = fulldb.getSongs();
+        return allTracks.stream().filter(e -> e.getRating()==0 && e.getFilePath().contains("LANtrax")).toList();
     }
 }
