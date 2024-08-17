@@ -1,6 +1,6 @@
 package com.legendarylan.dj;
 
-import com.legendarylan.dj.vdj.data.Song;
+import com.legendarylan.dj.vdj.data.Track;
 import com.legendarylan.dj.vdj.data.Tags;
 import com.legendarylan.dj.vdj.data.VirtualDJDatabase;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +28,7 @@ public class Configs {
 	@Bean
 	public Jaxb2Marshaller marshaller(){
 		Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-		marshaller.setClassesToBeBound(VirtualDJDatabase.class, Song.class, Tags.class);
+		marshaller.setClassesToBeBound(VirtualDJDatabase.class, Track.class, Tags.class);
 		return marshaller;
 	}
 

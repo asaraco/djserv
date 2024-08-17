@@ -5,7 +5,7 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name="Tags")
 public class Tags {
-    private String author;
+    private String artist;
     private String title;
     private String genre;
     private String album;
@@ -26,11 +26,11 @@ public class Tags {
     */
 
     @XmlAttribute(name="Author")
-    public String getAuthor() {
-        return author;
+    public String getArtist() {
+        return artist;
     }
-    public void setAuthor(String author) {
-        this.author = author;
+    public void setArtist(String artist) {
+        this.artist = artist;
     }
 
     @XmlAttribute(name="Title")

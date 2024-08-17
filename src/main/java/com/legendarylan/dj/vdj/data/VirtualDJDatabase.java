@@ -10,7 +10,7 @@ public class VirtualDJDatabase {
     @XmlAttribute(name="Version")
     public int version;
     @XmlElement(name="Song")
-    public List<Song> songs;
+    public List<Track> tracks;
 
     public int getVersion() {
         return version;
@@ -19,10 +19,10 @@ public class VirtualDJDatabase {
         this.version = version;
     }
 
-    public List<Song> getSongs() {
-        return songs;
+    public List<Track> getSongs() {
+        return tracks;
     }
-    public void setSongs(List<Song> songs) {
-        this.songs = songs;
+    public void setSongs(List<Track> tracks) {
+        this.tracks = tracks;
     }
 }

@@ -5,7 +5,7 @@ import jakarta.xml.bind.annotation.*;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Song {
+public class Track {
     // Fields that exist in database.xml
     @XmlAttribute(name="FilePath")
     public String filePath;
@@ -25,8 +25,8 @@ public class Song {
     private int id;
     private static int idCounter = 0;
 
-    public Song() {
-        id = idCounter;
+    public Track() {
+        this.id = idCounter;
         idCounter++;
     }
 
@@ -87,5 +87,30 @@ public class Song {
 
     public int getId() {
         return id;
+    }
+
+    // Fields derived from tags
+
+    public String getArtist() {
+        return this.tags.getArtist();
+    }
+
+    public String getTitle() {
+        return this.tags.getTitle();
+    }
+
+    public String getAlbum() {
+        return this.tags.getAlbum();
+    }
+
+    public String getGrouping() {
+        if (this.filePath.contains("netsearch")) {
+            return "[ONLINE DATABASE]";
+        }
+        else if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
+            return this.tags.getGrouping();
+        } else {
+            return this.tags.getArtist();
+        }
     }
 }
