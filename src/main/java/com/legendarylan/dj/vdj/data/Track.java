@@ -1,7 +1,10 @@
 package com.legendarylan.dj.vdj.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.xml.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -10,20 +13,27 @@ public class Track {
     @XmlAttribute(name="FilePath")
     public String filePath;
     @XmlAttribute(name="FileSize")
+    @JsonIgnore
     public String fileSize;
     @XmlElement(name="Tags")
+    @JsonIgnore
     public Tags tags;
     @XmlAttribute(name="Flag")
+    @JsonIgnore
     public int flag;
+    @JsonIgnore
     @XmlElement(name="Infos")
     public Infos infos;
+    @JsonIgnore
     @XmlElement(name="Comment")
     public String comment;
     @XmlElement(name="Poi")
+    @JsonIgnore
     public List<Poi> pois;
     // Generated fields
     private int id;
     private static int idCounter = 0;
+    private List<String> crates;
 
     public Track() {
         this.id = idCounter;
@@ -103,6 +113,7 @@ public class Track {
         return this.tags.getAlbum();
     }
 
+    @JsonIgnore
     public Integer getRating() {
         return this.tags.getStars();
     }
@@ -116,5 +127,29 @@ public class Track {
         } else {
             return this.tags.getArtist();
         }
+    }
+
+    public List<String> getCrates() {
+        if (this.crates == null) {
+            if (this.tags.getCrates()!=null) {
+                // Split the string into an array via the hashtags (and leading space)
+                List<String> crateList = Arrays.asList(this.tags.getCrates().split(" #"));
+                // First one will retain its hashtag, but prepend it back onto the other ones
+                for (int i=1; i<crateList.size(); i++) {
+                    String s = crateList.get(i);
+                    s = "#" + s;
+                    crateList.set(i, s);
+                }
+                // Set the value
+                this.setCrates(crateList);
+            } else {
+                this.setCrates(new ArrayList<String>());
+            }
+        }
+        return this.crates;
+    }
+
+    public void setCrates(List<String> crates) {
+        this.crates = crates;
     }
 }

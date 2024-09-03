@@ -20,7 +20,7 @@ public class XmlController {
     @Autowired
     private Jaxb2Marshaller marshaller;
 
-    private static File xmlDatabase = new File("C:\\Users\\lemmh\\_VDJ_backup\\database.xml");;
+    private static File xmlDatabase = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");;
 
     @GetMapping("/getAllTracks")
     public List<Track> getAllTracks() throws FileNotFoundException {
