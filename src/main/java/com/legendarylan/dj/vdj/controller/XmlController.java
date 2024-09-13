@@ -1,7 +1,9 @@
 package com.legendarylan.dj.vdj.controller;
 
+import com.legendarylan.dj.vdj.data.PlaylistSong;
 import com.legendarylan.dj.vdj.data.Track;
 import com.legendarylan.dj.vdj.data.VirtualDJDatabase;
+import com.legendarylan.dj.vdj.data.VirtualFolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +22,8 @@ public class XmlController {
     @Autowired
     private Jaxb2Marshaller marshaller;
 
-    private static File xmlDatabase = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");;
+    private static File xmlDatabase = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
+    private static File automixQueue = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\Sideview\\automix.vdjfolder");
 
     @GetMapping("/getAllTracks")
     public List<Track> getAllTracks() throws FileNotFoundException {
@@ -47,5 +50,11 @@ public class XmlController {
         VirtualDJDatabase fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(xmlDatabase));
         List<Track> allTracks = fulldb.getSongs();
         return allTracks.stream().filter(e -> e.getRating()==0 && e.getFilePath().contains("LANtrax")).toList();
+    }
+
+    @GetMapping("/getQueue")
+    public List<PlaylistSong> getQueue() {
+        VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
+        return vdjfolder.getSongs();
     }
 }

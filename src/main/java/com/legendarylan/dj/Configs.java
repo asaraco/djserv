@@ -1,8 +1,6 @@
 package com.legendarylan.dj;
 
-import com.legendarylan.dj.vdj.data.Track;
-import com.legendarylan.dj.vdj.data.Tags;
-import com.legendarylan.dj.vdj.data.VirtualDJDatabase;
+import com.legendarylan.dj.vdj.data.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,7 +26,7 @@ public class Configs {
 	@Bean
 	public Jaxb2Marshaller marshaller(){
 		Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-		marshaller.setClassesToBeBound(VirtualDJDatabase.class, Track.class, Tags.class);
+		marshaller.setClassesToBeBound(VirtualDJDatabase.class, Track.class, Tags.class, VirtualFolder.class, PlaylistSong.class);
 		return marshaller;
 	}
 
