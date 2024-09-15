@@ -1,14 +1,18 @@
 package com.legendarylan.dj.vdj.data;
 
+import com.legendarylan.dj.vdj.controller.XmlController;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
+import java.io.FileNotFoundException;
+import java.util.List;
+
 @XmlRootElement(name="song")
 public class PlaylistSong {
     // Fields that exist in automix.vdjfolder
-    private int idx;
+    private int position;
     private String path;
     private String artist;
     private String title;
@@ -22,10 +26,12 @@ public class PlaylistSong {
     String key;
     int size;
      */
+    // Custom fields
+    private Track track;
 
     @XmlAttribute(name="idx")
-    public int getIdx() {        return idx;    }
-    public void setIdx(int idx) {        this.idx = idx;    }
+    public int getPosition() {        return position;    }
+    public void setPosition(int position) {        this.position = position;    }
 
     @XmlAttribute(name="path")
     public String getPath() {        return path;    }
@@ -50,4 +56,26 @@ public class PlaylistSong {
     @XmlAttribute(name="remix")
     public String getRemix() {        return remix;    }
     public void setRemix(String remix) {        this.remix = remix;    }
+
+    public Track getTrack() throws FileNotFoundException {
+        List<Track> allTracks = XmlController.getFulldbSongs();
+        for (Track t: allTracks) {
+            if (t.getFilePath().equals(this.path)) this.track = t;
+        }
+        if (this.track == null) {
+            Track t = new Track();
+            Tags tt = new Tags();
+            Infos i = new Infos();
+            t.setFilePath(this.path);
+            tt.setArtist(this.artist);
+            tt.setTitle(this.title);
+            tt.setYear(0);
+            tt.setAlbum("");
+            i.setSongLength(this.songlength);
+            t.setTags(tt);
+            t.setInfos(i);
+            this.track = t;
+        }
+        return this.track;
+    }
 }

@@ -129,6 +129,14 @@ public class Track {
         }
     }
 
+    public double getDuration() {
+        if (this.infos==null) {
+            return 0d;
+        } else {
+            return this.infos.getSongLength();
+        }
+    }
+
     public List<String> getCrates() {
         if (this.crates == null) {
             if (this.tags.getCrates()!=null) {
