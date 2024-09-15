@@ -113,6 +113,10 @@ public class Track {
         return this.tags.getAlbum();
     }
 
+    public int getYear() {
+        return this.tags.getYear();
+    }
+
     @JsonIgnore
     public Integer getRating() {
         return this.tags.getStars();

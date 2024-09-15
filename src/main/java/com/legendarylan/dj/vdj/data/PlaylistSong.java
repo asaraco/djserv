@@ -5,12 +5,15 @@ import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlRootElement;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.FileNotFoundException;
 import java.util.List;
 
 @XmlRootElement(name="song")
 public class PlaylistSong {
+    private static Logger logger = LogManager.getLogger(PlaylistSong.class);
     // Fields that exist in automix.vdjfolder
     private int position;
     private String path;
@@ -60,7 +63,13 @@ public class PlaylistSong {
     public Track getTrack() throws FileNotFoundException {
         List<Track> allTracks = XmlController.getFulldbSongs();
         for (Track t: allTracks) {
-            if (t.getFilePath().equals(this.path)) this.track = t;
+            int pFilenameIndex = this.getPath().lastIndexOf("\\");
+            int tFilenameIndex = t.getFilePath().lastIndexOf("\\");
+            if ((pFilenameIndex>=0) && (tFilenameIndex>=0)) {
+                if (t.getFilePath().substring(tFilenameIndex).equals(this.getPath().substring(pFilenameIndex))) this.track = t;
+            } else {
+                if (t.getFilePath().equals(this.getPath())) this.track = t;
+            }
         }
         if (this.track == null) {
             Track t = new Track();
