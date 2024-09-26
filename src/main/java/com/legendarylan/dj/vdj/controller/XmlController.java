@@ -1,17 +1,29 @@
 package com.legendarylan.dj.vdj.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.legendarylan.dj.vdj.data.*;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.io.comparator.LastModifiedFileComparator;
 import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.coyote.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
@@ -33,12 +45,14 @@ public class XmlController {
 
     private static List<Track> allTracks = null;
 
+    //TODO: Default to some kind of empty list if files don't exist
     private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
     private static File vdjDatabaseL = new File("L:\\VirtualDJ\\database.xml");
     private static File automixQueue = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\Sideview\\automix.vdjfolder");
     private static File historyPath = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\History\\");
     private static File historyPlaylistFile;
 
+    //TODO: Some method to re-load the history playlist without restarting this whole thing
     static {
         if (historyPath.isDirectory()) {
             File[] dirFiles = historyPath.listFiles((FileFilter) FileFilterUtils.suffixFileFilter(".m3u"));
@@ -143,5 +157,30 @@ public class XmlController {
         p.setName("Last Played");
         p.setPlaylistTracks(pSongs);
         return p;
+    }
+
+    @RequestMapping(path="findSongByIdForAskTheDJ", method=RequestMethod.POST)
+    @ResponseBody
+    ResponseEntity<?> requestSong(String id) {
+        List<Track> highlander = (List<Track>) allTracks.stream().filter(e -> e.getId()==Integer.parseInt(id)).toList();
+        logger.debug("Highlander({}): {}", id, highlander);
+        Track t = highlander.get(0);
+        String sendToAskTheDJ = t.getArtist() + " - " + t.getTitle();
+        // Call VDJ 'Ask The DJ' API
+        String uri = "https://virtualdj.com/ask/user28381061";
+        RestTemplate restTemplate = new RestTemplate();
+        //String reqBody = "{'name':'sirlemmingRequest', 'message':'"+sendToAskTheDJ+"'}";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        MultiValueMap<String,String> parms = new LinkedMultiValueMap<>();
+        parms.add("name","sirlemmingRequest");
+        parms.add("message",sendToAskTheDJ);
+        logger.debug(parms);
+        HttpEntity<MultiValueMap<String,String>> entity = new HttpEntity<>(parms, headers);
+        ResponseEntity<String> result = restTemplate.postForEntity(uri, entity, String.class);
+
+        System.out.println(result.getBody());
+
+        return ResponseEntity.ok(result.getStatusCode());
     }
 }
