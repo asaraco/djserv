@@ -183,4 +183,23 @@ public class XmlController {
 
         return ResponseEntity.ok(result.getStatusCode());
     }
+
+    @RequestMapping(path="deezerSearch", method=RequestMethod.GET)
+    @ResponseBody
+    ResponseEntity<?> deezerSearch(@RequestParam(value="query") String query) {
+        logger.debug("deezerSearch({})", query);
+        // Call Deezer search API
+        RestTemplate restTemplate = new RestTemplate();
+        String queryUrl = "https://api.deezer.com/search?q="+query+"&output=json";
+        //ResponseEntity<DeezerSearchResult[]> result = restTemplate.getForEntity(queryUrl, DeezerSearchResult[].class);
+        DeezerSearchResult result = restTemplate.getForObject(queryUrl, DeezerSearchResult.class);
+        System.out.println(result);
+
+        List<DeezerResultSimple> songList = new ArrayList<>();
+        for (DeezerSearchResult.DeezerSong d : result.getData()) {
+            songList.add(new DeezerResultSimple(d));
+        }
+
+        return ResponseEntity.ok(songList);
+    }
 }
