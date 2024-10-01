@@ -2,6 +2,7 @@ package com.legendarylan.dj.vdj.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.math.BigInteger;
 import java.util.List;
 
 public class DeezerSearchResult {
@@ -15,8 +16,7 @@ public class DeezerSearchResult {
     }
 
     public static class DeezerSong {
-        @JsonIgnore
-        private int id;
+        private BigInteger id;
         @JsonIgnore
         private boolean readable;
         private String title;
@@ -43,10 +43,10 @@ public class DeezerSearchResult {
 
         /* Getters & Setters */
 
-        public int getId() {
+        public BigInteger getId() {
             return id;
         }
-        public void setId(int id) {
+        public void setId(BigInteger id) {
             this.id = id;
         }
 
