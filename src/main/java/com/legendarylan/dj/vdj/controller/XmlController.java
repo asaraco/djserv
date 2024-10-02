@@ -32,6 +32,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,8 +53,26 @@ public class XmlController {
     private static File historyPath = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\History\\");
     private static File historyPlaylistFile;
 
-    //TODO: Some method to re-load the history playlist without restarting this whole thing
-    static {
+    /**
+     * Initialize or force a reload of the entire database
+     */
+    @PostConstruct
+    @GetMapping("/forceReloadDatabase")
+    private void reloadDatabase() {
+        logger.debug("Reloading database");
+        VirtualDJDatabase dbL = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseL));
+        allTracks = dbL.getSongs();
+        VirtualDJDatabase dbC = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseC));
+        allTracks.addAll(dbC.getSongs());
+    }
+
+    /**
+     * Initialize or force a reload of the play queue/history
+     */
+    @PostConstruct
+    @GetMapping("/forceReloadQueue")
+    private void reloadQueue() {
+        logger.debug("Reloading play history and queue");
         if (historyPath.isDirectory()) {
             File[] dirFiles = historyPath.listFiles((FileFilter) FileFilterUtils.suffixFileFilter(".m3u"));
             if (dirFiles!=null && dirFiles.length>0) {
@@ -67,6 +86,8 @@ public class XmlController {
     @EventListener(ApplicationReadyEvent.class)
     public void doSomethingAfterStartup() {
         System.out.println("hello world, I have just started up");
+        reloadDatabase();
+        reloadQueue();
         //Jaxb2Marshaller marshaller2 = new Jaxb2Marshaller();
         //marshaller.setClassesToBeBound(VirtualDJDatabase.class, Track.class, Tags.class, VirtualFolder.class, PlaylistSong.class);
         //if (fulldb==null) fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(xmlDatabase));
@@ -76,23 +97,17 @@ public class XmlController {
         return allTracks;
     }
 
-    @PostConstruct
-    @Cacheable("vdjDatabase")
     @GetMapping("/getAllTracks")
     public List<Track> getAllTracks() throws FileNotFoundException {
-        //if (allTracks==null) {
-            VirtualDJDatabase dbL = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseL));
-            allTracks = dbL.getSongs();
-            VirtualDJDatabase dbC = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseC));
-            allTracks.addAll(dbC.getSongs());
-        //}
+        reloadDatabase();
         return allTracks;
     }
 
+    @Cacheable("vdjDatabase")
     @GetMapping("/getRatedTracks")
     public List<Track> getRatedTracks() throws FileNotFoundException {
         if (allTracks==null) {
-            getAllTracks();
+            reloadDatabase();
         }
         return allTracks.stream().filter(e -> e.getRating()>0).toList();
     }
@@ -100,7 +115,7 @@ public class XmlController {
     @GetMapping("/getRatedLocalTracks")
     public List<Track> getRatedLocalTracks() throws FileNotFoundException {
         if (allTracks==null) {
-            getAllTracks();
+            reloadDatabase();
         }
         return allTracks.stream().filter(e -> e.getRating()>0 && !e.getFilePath().contains("netsearch")).toList();
     }
@@ -108,7 +123,7 @@ public class XmlController {
     @GetMapping("/getUnratedLocalTracks")
     public List<Track> getUnratedLocalTracks() throws FileNotFoundException {
         if (allTracks==null) {
-            getAllTracks();
+            reloadDatabase();
         }
         return allTracks.stream().filter(e -> e.getRating()==0 && e.getFilePath().contains("LANtrax")).toList();
     }
@@ -117,6 +132,15 @@ public class XmlController {
     public List<Track> getOnlineTracks() {
         VirtualDJDatabase fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseC));
         return fulldb.getSongs().stream().filter(e -> e.getFilePath().contains("netsearch")).toList();
+    }
+
+    @GetMapping("/getRatedRecentTracks")
+    public List<Track> getRatedRecentTracks() throws FileNotFoundException {
+        int thisYear = LocalDate.now().getYear();
+        if (allTracks==null) {
+            reloadDatabase();
+        }
+        return allTracks.stream().filter(e -> e.getRating()>0).filter(e -> e.getYear()>=(thisYear-1)).toList();
     }
 
     @GetMapping("/getQueue")
@@ -137,14 +161,16 @@ public class XmlController {
         PlaylistSong currentPS = new PlaylistSong();
         for (String line : fileLines) {
             if (line.startsWith("#EXTVDJ:")) {
+                String sArtist = "";
+                String sTitle = "";
                 //logger.debug("EXTVDJ - " + line);
                 PlaylistSong ps = new PlaylistSong();
                 int iArtistStart = line.indexOf("<artist>");
                 int iArtistEnd = line.indexOf("</artist");
-                String sArtist = line.substring(iArtistStart+8, iArtistEnd);
+                if (iArtistStart > -1 && iArtistEnd > -1) sArtist = line.substring(iArtistStart+8, iArtistEnd);
                 int iTitleStart = line.indexOf("<title>");
                 int iTitleEnd = line.indexOf("</title>");
-                String sTitle = line.substring(iTitleStart+7, iTitleEnd);
+                if (iTitleStart > -1 && iTitleEnd > -1) sTitle = line.substring(iTitleStart+7, iTitleEnd);
                 ps.setArtist(sArtist);
                 ps.setTitle(sTitle);
                 currentPS = ps;
