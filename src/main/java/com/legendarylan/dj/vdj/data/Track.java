@@ -109,6 +109,10 @@ public class Track {
         return this.tags.getTitle();
     }
 
+    public String getSubtitle() {
+        return this.tags.getRemix();
+    }
+
     public String getAlbum() {
         return this.tags.getAlbum();
     }
