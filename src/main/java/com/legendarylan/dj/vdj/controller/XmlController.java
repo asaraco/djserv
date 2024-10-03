@@ -36,6 +36,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200"})
@@ -190,17 +191,33 @@ public class XmlController {
     ResponseEntity<?> requestSong(String id) {
         List<Track> highlander = (List<Track>) allTracks.stream().filter(e -> e.getId()==Integer.parseInt(id)).toList();
         logger.debug("Highlander({}): {}", id, highlander);
-        Track t = highlander.get(0);
-        String sendToAskTheDJ = t.getArtist() + " - " + t.getTitle();
+        if (!highlander.isEmpty()) {
+            Track t = highlander.get(0);
+            String sendToAskTheDJ = t.getArtist() + " - " + t.getTitle();
+            // Use this string in "Ask The DJ" request
+            ResponseEntity<?> result = askTheDJ(sendToAskTheDJ);
+
+            System.out.println(result.getBody());
+
+            return ResponseEntity.ok(result.getStatusCode());
+        } else {
+            return null;
+        }
+
+    }
+
+    @RequestMapping(path="requestAskTheDJ", method=RequestMethod.POST)
+    @ResponseBody
+    ResponseEntity<?> askTheDJ(String message) {
         // Call VDJ 'Ask The DJ' API
-        String uri = "https://virtualdj.com/ask/user28381061";
+        String uri = "https://virtualdj.com/ask/Legendary__LAN";
         RestTemplate restTemplate = new RestTemplate();
         //String reqBody = "{'name':'sirlemmingRequest', 'message':'"+sendToAskTheDJ+"'}";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String,String> parms = new LinkedMultiValueMap<>();
         parms.add("name","sirlemmingRequest");
-        parms.add("message",sendToAskTheDJ);
+        parms.add("message",message);
         logger.debug(parms);
         HttpEntity<MultiValueMap<String,String>> entity = new HttpEntity<>(parms, headers);
         ResponseEntity<String> result = restTemplate.postForEntity(uri, entity, String.class);

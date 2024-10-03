@@ -140,14 +140,14 @@ public class Track {
         if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
             String lGroup = this.tags.getGrouping().toLowerCase();
             if (lGroup.startsWith("the ")) {
-                return lGroup.substring(5);
+                return lGroup.substring(4);
             } else {
                 return lGroup;
             }
         } else if (this.tags.getArtist()!=null && !this.tags.getArtist().isBlank()) {
             String lArtist = this.tags.getArtist().toLowerCase();
             if (lArtist.startsWith("the ")) {
-                return lArtist.substring(5);
+                return lArtist.substring(4);
             } else {
                 return lArtist;
             }
