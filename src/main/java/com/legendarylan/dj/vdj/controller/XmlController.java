@@ -214,9 +214,10 @@ public class XmlController {
     @ResponseBody
     ResponseEntity<?> deezerSearch(@RequestParam(value="query") String query) {
         logger.debug("deezerSearch({})", query);
+        int limit = 100;    // Limit # of search results; if not set, it defaults to 25
         // Call Deezer search API
         RestTemplate restTemplate = new RestTemplate();
-        String queryUrl = "https://api.deezer.com/search?q="+query+"&output=json";
+        String queryUrl = "https://api.deezer.com/search?q="+query+"&output=json&limit="+limit;
         //ResponseEntity<DeezerSearchResult[]> result = restTemplate.getForEntity(queryUrl, DeezerSearchResult[].class);
         DeezerSearchResult result = restTemplate.getForObject(queryUrl, DeezerSearchResult.class);
         System.out.println(result);

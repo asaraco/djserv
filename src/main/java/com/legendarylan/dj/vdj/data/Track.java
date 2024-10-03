@@ -47,7 +47,6 @@ public class Track {
         this.filePath = filePath;
     }
 
-
     public String getFileSize() {
         return fileSize;
     }
@@ -79,14 +78,12 @@ public class Track {
         this.infos = infos;
     }
 
-
     public String getComment() {
         return comment;
     }
     public void setComment(String comment) {
         this.comment = comment;
     }
-
 
     public List<Poi> getPois() {
         return pois;
@@ -132,8 +129,30 @@ public class Track {
         }
         else if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
             return this.tags.getGrouping();
+        } else if (this.tags.getArtist()==null || this.tags.getArtist().isBlank()) {
+            return "(no artist)";
         } else {
             return this.tags.getArtist();
+        }
+    }
+
+    public String getSortArtist() {
+        if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
+            String lGroup = this.tags.getGrouping().toLowerCase();
+            if (lGroup.startsWith("the ")) {
+                return lGroup.substring(5);
+            } else {
+                return lGroup;
+            }
+        } else if (this.tags.getArtist()!=null && !this.tags.getArtist().isBlank()) {
+            String lArtist = this.tags.getArtist().toLowerCase();
+            if (lArtist.startsWith("the ")) {
+                return lArtist.substring(5);
+            } else {
+                return lArtist;
+            }
+        } else {
+            return "(no artist)";
         }
     }
 
