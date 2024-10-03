@@ -30,14 +30,24 @@ public class Track {
     @XmlElement(name="Poi")
     @JsonIgnore
     public List<Poi> pois;
+    @XmlElement(name="Link")
+    @JsonIgnore
+    public Link link;
     // Generated fields
     private int id;
     private static int idCounter = 0;
     private List<String> crates;
+    private double duration;
+    private String grouping;
+    private String sortArtist;
+    private boolean onlineSource;
 
     public Track() {
         this.id = idCounter;
         idCounter++;
+        if (getLink()!=null) {
+            System.out.println(getLink());
+        }
     }
 
     public String getFilePath() {
@@ -96,6 +106,14 @@ public class Track {
         return id;
     }
 
+    public Link getLink() {
+        return link;
+    }
+
+    public void setLink(Link link) {
+        this.link = link;
+    }
+
     // Fields derived from tags
 
     public String getArtist() {
@@ -124,44 +142,55 @@ public class Track {
     }
 
     public String getGrouping() {
-        if (this.filePath.contains("netsearch")) {
-            return "[ONLINE DATABASE]";
+        if (this.grouping==null) {
+            /*
+            if (this.filePath.contains("netsearch")) {
+                this.grouping = "[ONLINE DATABASE]";
+            }
+             */
+            if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
+                this.grouping = this.tags.getGrouping();
+            } else if (this.tags.getArtist()==null || this.tags.getArtist().isBlank()) {
+                this.grouping = "(no artist)";
+            } else {
+                this.grouping = this.tags.getArtist();
+            }
         }
-        else if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
-            return this.tags.getGrouping();
-        } else if (this.tags.getArtist()==null || this.tags.getArtist().isBlank()) {
-            return "(no artist)";
-        } else {
-            return this.tags.getArtist();
-        }
+        return this.grouping;
     }
 
     public String getSortArtist() {
-        if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
-            String lGroup = this.tags.getGrouping().toLowerCase();
-            if (lGroup.startsWith("the ")) {
-                return lGroup.substring(4);
+        if (this.sortArtist==null) {
+            if (this.tags.getGrouping()!=null && !this.tags.getGrouping().isBlank()) {
+                String lGroup = this.tags.getGrouping().toLowerCase();
+                if (lGroup.startsWith("the ")) {
+                    this.sortArtist = lGroup.substring(4);
+                } else {
+                    this.sortArtist = lGroup;
+                }
+            } else if (this.tags.getArtist()!=null && !this.tags.getArtist().isBlank()) {
+                String lArtist = this.tags.getArtist().toLowerCase();
+                if (lArtist.startsWith("the ")) {
+                    this.sortArtist = lArtist.substring(4);
+                } else {
+                    this.sortArtist = lArtist;
+                }
             } else {
-                return lGroup;
+                this.sortArtist = "(no artist)";
             }
-        } else if (this.tags.getArtist()!=null && !this.tags.getArtist().isBlank()) {
-            String lArtist = this.tags.getArtist().toLowerCase();
-            if (lArtist.startsWith("the ")) {
-                return lArtist.substring(4);
-            } else {
-                return lArtist;
-            }
-        } else {
-            return "(no artist)";
         }
+        return this.sortArtist;
     }
 
     public double getDuration() {
-        if (this.infos==null) {
-            return 0d;
-        } else {
-            return this.infos.getSongLength();
+        if (this.duration==0d) {
+            if (this.infos==null) {
+                this.duration = 0d;
+            } else {
+                this.duration = this.infos.getSongLength();
+            }
         }
+        return this.duration;
     }
 
     public List<String> getCrates() {
@@ -186,5 +215,9 @@ public class Track {
 
     public void setCrates(List<String> crates) {
         this.crates = crates;
+    }
+
+    public boolean isOnlineSource() {
+        return this.getLink()!=null;
     }
 }

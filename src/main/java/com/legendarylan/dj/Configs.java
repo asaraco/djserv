@@ -34,7 +34,7 @@ public class Configs {
 	@Bean
 	public Jaxb2Marshaller marshaller(){
 		Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-		marshaller.setClassesToBeBound(VirtualDJDatabase.class, Track.class, Tags.class, VirtualFolder.class, PlaylistSong.class);
+		marshaller.setClassesToBeBound(VirtualDJDatabase.class, Track.class, Tags.class, VirtualFolder.class, PlaylistSong.class, Link.class);
 		return marshaller;
 	}
 
