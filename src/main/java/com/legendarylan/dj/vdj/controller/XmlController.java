@@ -15,28 +15,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
+import javax.print.attribute.standard.Media;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.localhost-ip}:80", "http://localhost:80"})
@@ -46,6 +45,7 @@ public class XmlController {
     private Jaxb2Marshaller marshaller;
 
     private static List<Track> allTracks = null;
+    private static List<SongRequest> requestQueue = new ArrayList<>();
 
     //TODO: Default to some kind of empty list if files don't exist
     private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
@@ -210,31 +210,26 @@ public class XmlController {
     @ResponseBody
     ResponseEntity<?> requestDirect(@RequestBody SongRequest sr) {
         logger.debug("requestDirect: ENTER");
+        // Add request to statically managed queue
+        requestQueue.add(sr);
         // Call VDJ Network Control Plugin
-        String uri = "http://localhost:8082/execute"; // ***AMS*** TODO: Replace with parameter
+        String uri = "http://localhost:8082/execute?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
         RestTemplate restTemplate = new RestTemplate();
-        String scriptBody = "automix_add_next \"" + sr.getFilePath() + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +1";
+        String scriptBody = "automix_add_next \"" + sr.getFilePath()+ "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
         logger.debug(scriptBody);
 
-        HttpHeaders headers = new HttpHeaders();
-        //headers.setContentType(MediaType.TEXT_PLAIN);
-        //HttpEntity<String> entity = new HttpEntity<>(scriptBody, headers);
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.setOrigin("*");
-        MultiValueMap<String,String> parms = new LinkedMultiValueMap<>();
-        //parms.add("script",scriptBody);
-        parms.add("script","get_clock");
-        parms.add("bearer","legendary"); // ***AMS*** TODO: Replace with parameter
-        logger.debug(parms);
-        HttpEntity<MultiValueMap<String,String>> entity = new HttpEntity<>(parms, headers);
-        //ResponseEntity<String> result = restTemplate.postForEntity(uri, entity, String.class);
-        uri+="?script="+scriptBody+"&bearer=legendary";
-        ResponseEntity<String> result = restTemplate.getForEntity(uri, String.class);
-        //ResponseEntity<String> result = restTemplate.postForObject(uri, entity, String.class);
+        //String uriWithParams = UriComponentsBuilder.fromHttpUrl(uri).queryParam("script", scriptBody).queryParam("bearer","legendary").encode().toUriString();
+        Map<String,String> params = new HashMap<>();
+        params.put("script",scriptBody);
+        params.put("bearer","legendary");
 
-        System.out.println(result.getBody());
+        //String scriptEncoded = UriUtils.encodeQueryParam(scriptBody, StandardCharsets.UTF_8);
+        //logger.debug(uriWithParams);
+        //uri+="?script="+scriptEncoded+"&bearer=legendary"; // ***AMS*** TODO: Replace password with parameter
+        String result = restTemplate.getForObject(uri, String.class, params);
+        System.out.println(result);
 
-        return ResponseEntity.ok(result.getStatusCode());
+        return ResponseEntity.ok(result);
     }
 
     @RequestMapping(path="requestAskTheDJ", method=RequestMethod.POST)
