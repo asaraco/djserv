@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200"})
+@CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.localhost-ip}:80", "http://localhost:80"})
 public class XmlController {
     private static Logger logger = LogManager.getLogger(XmlController.class);
     @Autowired
@@ -204,6 +204,37 @@ public class XmlController {
             return null;
         }
 
+    }
+
+    @RequestMapping(path="requestDirect", method=RequestMethod.POST, consumes=MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    ResponseEntity<?> requestDirect(@RequestBody SongRequest sr) {
+        logger.debug("requestDirect: ENTER");
+        // Call VDJ Network Control Plugin
+        String uri = "http://localhost:8082/execute"; // ***AMS*** TODO: Replace with parameter
+        RestTemplate restTemplate = new RestTemplate();
+        String scriptBody = "automix_add_next \"" + sr.getFilePath() + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +1";
+        logger.debug(scriptBody);
+
+        HttpHeaders headers = new HttpHeaders();
+        //headers.setContentType(MediaType.TEXT_PLAIN);
+        //HttpEntity<String> entity = new HttpEntity<>(scriptBody, headers);
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setOrigin("*");
+        MultiValueMap<String,String> parms = new LinkedMultiValueMap<>();
+        //parms.add("script",scriptBody);
+        parms.add("script","get_clock");
+        parms.add("bearer","legendary"); // ***AMS*** TODO: Replace with parameter
+        logger.debug(parms);
+        HttpEntity<MultiValueMap<String,String>> entity = new HttpEntity<>(parms, headers);
+        //ResponseEntity<String> result = restTemplate.postForEntity(uri, entity, String.class);
+        uri+="?script="+scriptBody+"&bearer=legendary";
+        ResponseEntity<String> result = restTemplate.getForEntity(uri, String.class);
+        //ResponseEntity<String> result = restTemplate.postForObject(uri, entity, String.class);
+
+        System.out.println(result.getBody());
+
+        return ResponseEntity.ok(result.getStatusCode());
     }
 
     @RequestMapping(path="requestAskTheDJ", method=RequestMethod.POST)
