@@ -61,7 +61,7 @@ public class PlaylistSong {
     public void setRemix(String remix) {        this.remix = remix;    }
 
     public Track getTrack() throws FileNotFoundException {
-        List<Track> allTracks = XmlController.getFulldbSongs();
+        List<Track> allTracks = XmlController.getFullDbSongs();
         for (Track t: allTracks) {
             int pFilenameIndex = this.getPath().lastIndexOf("\\");
             int tFilenameIndex = t.getFilePath().lastIndexOf("\\");

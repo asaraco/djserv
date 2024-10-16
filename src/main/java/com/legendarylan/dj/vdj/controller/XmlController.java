@@ -1,42 +1,33 @@
 package com.legendarylan.dj.vdj.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.legendarylan.dj.vdj.data.*;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.io.comparator.LastModifiedFileComparator;
 import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.coyote.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.*;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-import org.springframework.web.util.UriUtils;
 
-import javax.print.attribute.standard.Media;
 import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
 
+/**
+ * Controller class with REST endpoints pertaining to
+ * VirtualDJ database & playlist access.
+ */
 @RestController
 @CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.localhost-ip}:80", "http://localhost:80"})
 public class XmlController {
@@ -45,7 +36,6 @@ public class XmlController {
     private Jaxb2Marshaller marshaller;
 
     private static List<Track> allTracks = null;
-    private static List<SongRequest> requestQueue = new ArrayList<>();
 
     //TODO: Default to some kind of empty list if files don't exist
     private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
@@ -86,24 +76,35 @@ public class XmlController {
 
     @EventListener(ApplicationReadyEvent.class)
     public void doSomethingAfterStartup() {
-        System.out.println("hello world, I have just started up");
+        System.out.println("XML Controller starting up");
         reloadDatabase();
         reloadQueue();
-        //Jaxb2Marshaller marshaller2 = new Jaxb2Marshaller();
-        //marshaller.setClassesToBeBound(VirtualDJDatabase.class, Track.class, Tags.class, VirtualFolder.class, PlaylistSong.class);
-        //if (fulldb==null) fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(xmlDatabase));
     }
 
-    public static List<Track> getFulldbSongs() {
+    /**
+     * Returns the full list of songs (for internal use)
+     * @return List<Track>
+     */
+    public static List<Track> getFullDbSongs() {
         return allTracks;
     }
 
+    /**
+     * Reloads the database and returns the full list of songs
+     * @return List<Track>
+     * @throws FileNotFoundException - This should never happen if configured correctly
+     */
     @GetMapping("/getAllTracks")
     public List<Track> getAllTracks() throws FileNotFoundException {
         reloadDatabase();
         return allTracks;
     }
 
+    /**
+     * Returns a filtered list of tracks that are rated 1 star or higher.
+     * @return List<Track>
+     * @throws FileNotFoundException - This should never happen if configured correctly
+     */
     @Cacheable("vdjDatabase")
     @GetMapping("/getRatedTracks")
     public List<Track> getRatedTracks() throws FileNotFoundException {
@@ -113,6 +114,12 @@ public class XmlController {
         return allTracks.stream().filter(e -> e.getRating()>0).toList();
     }
 
+    /**
+     * Returns a filtered list of tracks that are rated 1 star or higher,
+     * and are not sourced from an online service.
+     * @return List<Track>
+     * @throws FileNotFoundException - This should never happen if configured correctly
+     */
     @GetMapping("/getRatedLocalTracks")
     public List<Track> getRatedLocalTracks() throws FileNotFoundException {
         if (allTracks==null) {
@@ -121,6 +128,12 @@ public class XmlController {
         return allTracks.stream().filter(e -> e.getRating()>0 && !e.getFilePath().contains("netsearch")).toList();
     }
 
+    /**
+     * Returns a filtered list of tracks that are rated 0 stars only.
+     * These would be non-song audio files or songs otherwise meant to be hidden from the user.
+     * @return List<Track>
+     * @throws FileNotFoundException - This should never happen if configured correctly
+     */
     @GetMapping("/getUnratedLocalTracks")
     public List<Track> getUnratedLocalTracks() throws FileNotFoundException {
         if (allTracks==null) {
@@ -129,12 +142,21 @@ public class XmlController {
         return allTracks.stream().filter(e -> e.getRating()==0 && e.getFilePath().contains("LANtrax")).toList();
     }
 
+    /**
+     * Returns a filtered list of only the tracks that come from online databases.
+     * @return List<Track>
+     */
     @GetMapping("/getOnlineTracks")
     public List<Track> getOnlineTracks() {
         VirtualDJDatabase fulldb = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseC));
         return fulldb.getSongs().stream().filter(e -> e.getFilePath().contains("netsearch")).toList();
     }
 
+    /**
+     * Returns a filtered list of tracks that have been released within the last 2 years, and are rated 1 star or higher.
+     * @return List<Track>
+     * @throws FileNotFoundException - This should never happen if configured correctly
+     */
     @GetMapping("/getRatedRecentTracks")
     public List<Track> getRatedRecentTracks() throws FileNotFoundException {
         int thisYear = LocalDate.now().getYear();
@@ -144,6 +166,10 @@ public class XmlController {
         return allTracks.stream().filter(e -> e.getRating()>0).filter(e -> e.getYear()>=(thisYear-1)).toList();
     }
 
+    /**
+     * Returns the "Automix Queue" as a Playlist object.
+     * @return Playlist
+     */
     @GetMapping("/getQueue")
     public Playlist getQueue() {
         Playlist p = new Playlist();
@@ -153,6 +179,11 @@ public class XmlController {
         return p;
     }
 
+    /**
+     * Parses the most recent .m3u playlist file and returns it as a Playlist object.
+     * @return Playlist
+     * @throws IOException - This should never happen if configured correctly
+     */
     @GetMapping("/getPlayHistory")
     public Playlist getPlayHistory() throws IOException {
         Playlist p = new Playlist();
@@ -186,90 +217,4 @@ public class XmlController {
         return p;
     }
 
-    @RequestMapping(path="findSongByIdForAskTheDJ", method=RequestMethod.POST)
-    @ResponseBody
-    ResponseEntity<?> requestSong(String id) {
-        List<Track> highlander = (List<Track>) allTracks.stream().filter(e -> e.getId()==Integer.parseInt(id)).toList();
-        logger.debug("Highlander({}): {}", id, highlander);
-        if (!highlander.isEmpty()) {
-            Track t = highlander.get(0);
-            String sendToAskTheDJ = t.getArtist() + " - " + t.getTitle();
-            // Use this string in "Ask The DJ" request
-            ResponseEntity<?> result = askTheDJ(sendToAskTheDJ);
-
-            System.out.println(result.getBody());
-
-            return ResponseEntity.ok(result.getStatusCode());
-        } else {
-            return null;
-        }
-
-    }
-
-    @RequestMapping(path="requestDirect", method=RequestMethod.POST, consumes=MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    ResponseEntity<?> requestDirect(@RequestBody SongRequest sr) {
-        logger.debug("requestDirect: ENTER");
-        // Add request to statically managed queue
-        requestQueue.add(sr);
-        // Call VDJ Network Control Plugin
-        String uri = "http://localhost:8082/execute?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
-        RestTemplate restTemplate = new RestTemplate();
-        String scriptBody = "automix_add_next \"" + sr.getFilePath()+ "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
-        logger.debug(scriptBody);
-
-        //String uriWithParams = UriComponentsBuilder.fromHttpUrl(uri).queryParam("script", scriptBody).queryParam("bearer","legendary").encode().toUriString();
-        Map<String,String> params = new HashMap<>();
-        params.put("script",scriptBody);
-        params.put("bearer","legendary");
-
-        //String scriptEncoded = UriUtils.encodeQueryParam(scriptBody, StandardCharsets.UTF_8);
-        //logger.debug(uriWithParams);
-        //uri+="?script="+scriptEncoded+"&bearer=legendary"; // ***AMS*** TODO: Replace password with parameter
-        String result = restTemplate.getForObject(uri, String.class, params);
-        System.out.println(result);
-
-        return ResponseEntity.ok(result);
-    }
-
-    @RequestMapping(path="requestAskTheDJ", method=RequestMethod.POST)
-    @ResponseBody
-    ResponseEntity<?> askTheDJ(String message) {
-        // Call VDJ 'Ask The DJ' API
-        String uri = "https://virtualdj.com/ask/Legendary__LAN";
-        RestTemplate restTemplate = new RestTemplate();
-        //String reqBody = "{'name':'sirlemmingRequest', 'message':'"+sendToAskTheDJ+"'}";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        MultiValueMap<String,String> parms = new LinkedMultiValueMap<>();
-        parms.add("name","sirlemmingRequest");
-        parms.add("message",message);
-        logger.debug(parms);
-        HttpEntity<MultiValueMap<String,String>> entity = new HttpEntity<>(parms, headers);
-        ResponseEntity<String> result = restTemplate.postForEntity(uri, entity, String.class);
-
-        System.out.println(result.getBody());
-
-        return ResponseEntity.ok(result.getStatusCode());
-    }
-
-    @RequestMapping(path="deezerSearch", method=RequestMethod.GET)
-    @ResponseBody
-    ResponseEntity<?> deezerSearch(@RequestParam(value="query") String query) {
-        logger.debug("deezerSearch({})", query);
-        int limit = 100;    // Limit # of search results; if not set, it defaults to 25
-        // Call Deezer search API
-        RestTemplate restTemplate = new RestTemplate();
-        String queryUrl = "https://api.deezer.com/search?q="+query+"&output=json&limit="+limit;
-        //ResponseEntity<DeezerSearchResult[]> result = restTemplate.getForEntity(queryUrl, DeezerSearchResult[].class);
-        DeezerSearchResult result = restTemplate.getForObject(queryUrl, DeezerSearchResult.class);
-        System.out.println(result);
-
-        List<DeezerResultSimple> songList = new ArrayList<>();
-        for (DeezerSearchResult.DeezerSong d : result.getData()) {
-            songList.add(new DeezerResultSimple(d));
-        }
-
-        return ResponseEntity.ok(songList);
-    }
 }
