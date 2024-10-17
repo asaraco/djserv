@@ -10,4 +10,9 @@ public class SongRequest {
     public void setFilePath(String filePath) {
         this.filePath = filePath;
     }
+
+    @Override
+    public String toString() {
+        return "{'filePath': '" + this.getFilePath() + "'}";
+    }
 }

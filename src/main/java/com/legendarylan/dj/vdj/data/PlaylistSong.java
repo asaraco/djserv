@@ -27,10 +27,41 @@ public class PlaylistSong {
     String remix;
     String netsearchId;
     String key;
+    */
     int size;
-     */
+
     // Custom fields
     private Track track;
+
+    public Track getTrack() throws FileNotFoundException {
+        List<Track> allTracks = XmlController.getFullDbSongs();
+        for (Track t: allTracks) {
+            int pFilenameIndex = this.getPath().lastIndexOf("\\");
+            int tFilenameIndex = t.getFilePath().lastIndexOf("\\");
+            if ((pFilenameIndex>=0) && (tFilenameIndex>=0)) {
+                if (t.getFilePath().substring(tFilenameIndex).equals(this.getPath().substring(pFilenameIndex))) this.track = t;
+            } else {
+                if (t.getFilePath().equals(this.getPath())) this.track = t;
+            }
+        }
+        if (this.track == null) {
+            Track t = new Track();
+            Tags tt = new Tags();
+            Infos i = new Infos();
+            t.setFilePath(this.path);
+            tt.setArtist(this.artist);
+            tt.setTitle(this.title);
+            tt.setYear(0);
+            tt.setAlbum("");
+            i.setSongLength(this.songlength);
+            t.setTags(tt);
+            t.setInfos(i);
+            this.track = t;
+        }
+        return this.track;
+    }
+
+    /* Getters & Setters */
 
     @XmlAttribute(name="idx")
     public int getPosition() {        return position;    }
@@ -60,31 +91,7 @@ public class PlaylistSong {
     public String getRemix() {        return remix;    }
     public void setRemix(String remix) {        this.remix = remix;    }
 
-    public Track getTrack() throws FileNotFoundException {
-        List<Track> allTracks = XmlController.getFullDbSongs();
-        for (Track t: allTracks) {
-            int pFilenameIndex = this.getPath().lastIndexOf("\\");
-            int tFilenameIndex = t.getFilePath().lastIndexOf("\\");
-            if ((pFilenameIndex>=0) && (tFilenameIndex>=0)) {
-                if (t.getFilePath().substring(tFilenameIndex).equals(this.getPath().substring(pFilenameIndex))) this.track = t;
-            } else {
-                if (t.getFilePath().equals(this.getPath())) this.track = t;
-            }
-        }
-        if (this.track == null) {
-            Track t = new Track();
-            Tags tt = new Tags();
-            Infos i = new Infos();
-            t.setFilePath(this.path);
-            tt.setArtist(this.artist);
-            tt.setTitle(this.title);
-            tt.setYear(0);
-            tt.setAlbum("");
-            i.setSongLength(this.songlength);
-            t.setTags(tt);
-            t.setInfos(i);
-            this.track = t;
-        }
-        return this.track;
-    }
+    @XmlAttribute(name="size")
+    public int getSize() {  return size;    }
+    public void setSize(int size) { this.size = size;   }
 }
