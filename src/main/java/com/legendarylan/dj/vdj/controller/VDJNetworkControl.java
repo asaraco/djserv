@@ -87,6 +87,16 @@ public class VDJNetworkControl {
     @RequestMapping(path="getTimeRemaining", method=RequestMethod.GET)
     @ResponseBody
     ResponseEntity<?> getTimeRemaining() {
+        return ResponseEntity.ok(vdjGetTimeRemaining());
+    }
+
+    @RequestMapping(path="getSongPosition", method=RequestMethod.GET)
+    @ResponseBody
+    ResponseEntity<?> getSongPosition() {
+        return ResponseEntity.ok(vdjGetSongPosition());
+    }
+
+    public static int vdjGetTimeRemaining() {
         // Call VDJ Network Control Plugin
         RestTemplate restTemplate = new RestTemplate();
         String scriptBody = "deck active get_time remain";
@@ -98,8 +108,22 @@ public class VDJNetworkControl {
         // Do the call
         String result = restTemplate.getForObject(vdjScriptQueryUri, String.class, params);
         System.out.println(result);
-        // Finish
-        return ResponseEntity.ok(result);
+        return Integer.parseInt(result);
+    }
+
+    public static double vdjGetSongPosition() {
+        // Call VDJ Network Control Plugin
+        RestTemplate restTemplate = new RestTemplate();
+        String scriptBody = "deck active get_position";
+        logger.debug(scriptBody);
+        // Prepare URL params
+        Map<String,String> params = new HashMap<>();
+        params.put("script",scriptBody);
+        params.put("bearer","legendary");
+        // Do the call
+        String result = restTemplate.getForObject(vdjScriptQueryUri, String.class, params);
+        System.out.println(result);
+        return Double.parseDouble(result);
     }
 
 }

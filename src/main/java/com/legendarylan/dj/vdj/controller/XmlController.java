@@ -37,6 +37,9 @@ public class XmlController {
 
     private static List<Track> allTracks = null;
 
+    private boolean dbOutdated = false;
+
+    private static String vdjScriptQueryUri = "http://localhost:8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
     //TODO: Default to some kind of empty list if files don't exist
     private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
     private static File vdjDatabaseL = new File("L:\\VirtualDJ\\database.xml");
@@ -50,6 +53,7 @@ public class XmlController {
     @PostConstruct
     @GetMapping("/forceReloadDatabase")
     private void reloadDatabase() {
+        this.dbOutdated = true;
         logger.debug("Reloading database");
         VirtualDJDatabase dbL = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseL));
         allTracks = dbL.getSongs();
@@ -167,16 +171,24 @@ public class XmlController {
     }
 
     /**
-     * Returns the "Automix Queue" as a Playlist object.
-     * @return Playlist
+     * Returns the "Automix Queue" as a PlaylistQueue object.
+     * Invoke other webservices to fill in information about current track and database state.
+     * @return PlaylistQueue
      */
     @GetMapping("/getQueue")
-    public Playlist getQueue() {
-        Playlist p = new Playlist();
+    public PlaylistQueue getQueue() {
+        // Get queue from file
         VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
-        p.setName("Automix Queue");
-        p.setPlaylistTracks(vdjfolder.getSongs());
-        return p;
+        // Get current track duration
+        double duration = vdjfolder.getSongs().get(0).getSonglength();
+        logger.debug("Current track: {} ({})", vdjfolder.getSongs().get(0).getTitle(), duration);
+        // Get current track time data from webservices
+        int timeRemaining = VDJNetworkControl.vdjGetTimeRemaining();
+        double trackProgress = VDJNetworkControl.vdjGetSongPosition();
+        PlaylistQueue pq = new PlaylistQueue(this.dbOutdated, duration, trackProgress, timeRemaining);
+        pq.setName("Automix Queue");
+        pq.setPlaylistTracks(vdjfolder.getSongs());
+        return pq;
     }
 
     /**
