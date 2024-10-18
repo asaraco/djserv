@@ -31,7 +31,7 @@ public class DeezerController {
     @ResponseBody
     ResponseEntity<?> deezerSearch(@RequestParam(value="query") String query) {
         logger.debug("deezerSearch({})", query);
-        int limit = 100;    // Limit # of search results; if not set, it defaults to 25
+        int limit = 100;    // Limit # of search results; if not set, it defaults to 25. Cannot exceed 100.
         // Call Deezer search API
         RestTemplate restTemplate = new RestTemplate();
         String queryUrl = "https://api.deezer.com/search?q="+query+"&output=json&limit="+limit;

@@ -7,12 +7,21 @@ import java.util.List;
 
 public class DeezerSearchResult {
     private List<DeezerSong> data;
+    private int total;
 
     public List<DeezerSong> getData() {
         return data;
     }
     public void setData(List<DeezerSong> data) {
         this.data = data;
+    }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
     }
 
     public static class DeezerSong {
