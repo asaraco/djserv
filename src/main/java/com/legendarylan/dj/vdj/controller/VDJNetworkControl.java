@@ -6,12 +6,18 @@ import com.legendarylan.dj.vdj.data.SongRequest;
 import com.legendarylan.dj.vdj.data.Track;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,14 +77,32 @@ public class VDJNetworkControl {
         requestQueue.add(newRequest);
         // Call VDJ Network Control Plugin
         RestTemplate restTemplate = new RestTemplate();
-        String scriptBody = "automix_add_next \"" + newRequest.getFilePath()+ "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        String sanitizedPath = URLDecoder.decode(newRequest.getFilePath(), Charset.defaultCharset());
+        //sanitizedPath = sanitizedPath.replace(":", "%3A");
+        sanitizedPath = sanitizedPath.replace("/", "%2F");
+        //String scriptBody = "automix_add_next \"" + newRequest.getFilePath() + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        String scriptBody = "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        scriptBody = scriptBody.replace("&", "%26");
+        scriptBody = scriptBody.replace("\"", "%22");
+        scriptBody = scriptBody.replace(" ", "%20");
         logger.debug(scriptBody);
+        // ALTERNATE METHOD TO SOLVE ENCODING
+        UriComponents myUri = UriComponentsBuilder.fromHttpUrl("http://localhost:8082")
+                .path("/execute")
+                .queryParam("script",scriptBody)
+                .queryParam("bearer","legendary")
+                .build();
+        logger.debug("BUILT URI: {}", myUri);
+        URI converted = URI.create(myUri.toString());
+        //HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
+        //ResponseEntity<String> result = restTemplate.exchange(myUri.toUri(), HttpMethod.GET, entity, String.class);
+        //String result = restTemplate.getForObject(myUri.toUri(), String.class);
         // Prepare URL params
         Map<String,String> params = new HashMap<>();
         params.put("script",scriptBody);
         params.put("bearer","legendary");
         // Do the call
-        String result = restTemplate.getForObject(vdjScriptExecUri, String.class, params);
+        String result = restTemplate.getForObject(converted, String.class);
         System.out.println(result);
         // Finish
         return ResponseEntity.ok(result);
