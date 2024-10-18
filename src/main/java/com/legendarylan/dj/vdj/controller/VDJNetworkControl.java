@@ -80,6 +80,7 @@ public class VDJNetworkControl {
         String sanitizedPath = URLDecoder.decode(newRequest.getFilePath(), Charset.defaultCharset());
         //sanitizedPath = sanitizedPath.replace(":", "%3A");
         sanitizedPath = sanitizedPath.replace("/", "%2F");
+        sanitizedPath = sanitizedPath.replace("\\", "%5C");
         //String scriptBody = "automix_add_next \"" + newRequest.getFilePath() + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
         String scriptBody = "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
         scriptBody = scriptBody.replace("&", "%26");
