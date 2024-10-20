@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
@@ -63,7 +64,9 @@ public class XmlController {
 
     @PostConstruct
     @GetMapping("/forceReloadDatabase")
-    private boolean forceReloadDatabase() {
+    @CacheEvict(value="vdjDatabase", allEntries = true)
+    public boolean forceReloadDatabase() {
+        logger.debug("Forcing reload of database");
         this.reloadDatabase();
         return true;
     }

@@ -4,6 +4,7 @@ public class SongRequest {
     String filePath;
     String artist;
     String title;
+    boolean rated;
 
     @Override
     public String toString() {
@@ -31,5 +32,13 @@ public class SongRequest {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public boolean isRated() {
+        return rated;
+    }
+
+    public void setRated(boolean rated) {
+        this.rated = rated;
     }
 }

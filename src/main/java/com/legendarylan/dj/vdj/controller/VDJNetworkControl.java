@@ -81,12 +81,20 @@ public class VDJNetworkControl {
         //sanitizedPath = sanitizedPath.replace(":", "%3A");
         sanitizedPath = sanitizedPath.replace("/", "%2F");
         sanitizedPath = sanitizedPath.replace("\\", "%5C");
-        String scriptBody;
-        if (sanitizedPath.contains("netsearch")) {  // Tell VDJ to do a search first, which will hopefully make it get online track metadata
-            scriptBody = "search_add \"" + newRequest.getArtist() + " " + newRequest.getTitle() + "\" & automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
-        } else {
-            scriptBody = "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+
+        String scriptBody = "";
+        // If Deezer result, tell VDJ to do a search on it first, which will hopefully force it to get the online track metadata for its database
+        // (Otherwise, the request still works but it shows as a blank track)
+        if (sanitizedPath.contains("netsearch")) {
+            scriptBody += "search_add \"" + newRequest.getArtist() + " " + newRequest.getTitle() + "\" & ";
         }
+        // Main request script
+        scriptBody += "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        // If song isn't rated yet, rate it (this is important for new uploads to get into the main DB)
+        if (!newRequest.isRated()) {
+            scriptBody += " & browsed_song 'rating' 1";
+        }
+
         scriptBody = scriptBody.replace("&", "%26");
         scriptBody = scriptBody.replace("\"", "%22");
         scriptBody = scriptBody.replace(" ", "%20");
@@ -106,6 +114,10 @@ public class VDJNetworkControl {
         // Do the call
         String result = restTemplate.getForObject(converted, String.class);
         System.out.println(result);
+        // If it was a previously unrated song (new upload), refresh database to move it into the main area
+        if (!newRequest.isRated()) {
+            this.xmlController.forceReloadDatabase();
+        }
         // Finish
         return ResponseEntity.ok(result);
     }
