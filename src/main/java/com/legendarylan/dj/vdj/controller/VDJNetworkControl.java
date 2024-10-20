@@ -81,8 +81,12 @@ public class VDJNetworkControl {
         //sanitizedPath = sanitizedPath.replace(":", "%3A");
         sanitizedPath = sanitizedPath.replace("/", "%2F");
         sanitizedPath = sanitizedPath.replace("\\", "%5C");
-        //String scriptBody = "automix_add_next \"" + newRequest.getFilePath() + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
-        String scriptBody = "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        String scriptBody;
+        if (sanitizedPath.contains("netsearch")) {  // Tell VDJ to do a search first, which will hopefully make it get online track metadata
+            scriptBody = "search_add \"" + newRequest.getArtist() + " " + newRequest.getTitle() + "\" & automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        } else {
+            scriptBody = "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        }
         scriptBody = scriptBody.replace("&", "%26");
         scriptBody = scriptBody.replace("\"", "%22");
         scriptBody = scriptBody.replace(" ", "%20");
@@ -95,9 +99,6 @@ public class VDJNetworkControl {
                 .build();
         logger.debug("BUILT URI: {}", myUri);
         URI converted = URI.create(myUri.toString());
-        //HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
-        //ResponseEntity<String> result = restTemplate.exchange(myUri.toUri(), HttpMethod.GET, entity, String.class);
-        //String result = restTemplate.getForObject(myUri.toUri(), String.class);
         // Prepare URL params
         Map<String,String> params = new HashMap<>();
         params.put("script",scriptBody);

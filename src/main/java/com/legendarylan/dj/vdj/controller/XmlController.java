@@ -50,8 +50,8 @@ public class XmlController {
     /**
      * Initialize or force a reload of the entire database
      */
-    @PostConstruct
-    @GetMapping("/forceReloadDatabase")
+    //@PostConstruct
+    //@GetMapping("/forceReloadDatabase")
     private void reloadDatabase() {
         this.dbOutdated = true;
         logger.debug("Reloading database");
@@ -61,12 +61,19 @@ public class XmlController {
         allTracks.addAll(dbC.getSongs());
     }
 
+    @PostConstruct
+    @GetMapping("/forceReloadDatabase")
+    private boolean forceReloadDatabase() {
+        this.reloadDatabase();
+        return true;
+    }
+
     /**
      * Initialize or force a reload of the play queue/history
      */
     @PostConstruct
     @GetMapping("/forceReloadQueue")
-    private void reloadQueue() {
+    private boolean reloadQueue() {
         logger.debug("Reloading play history and queue");
         if (historyPath.isDirectory()) {
             File[] dirFiles = historyPath.listFiles((FileFilter) FileFilterUtils.suffixFileFilter(".m3u"));
@@ -76,6 +83,7 @@ public class XmlController {
                 logger.debug(historyPlaylistFile);
             }
         }
+        return true;
     }
 
     @EventListener(ApplicationReadyEvent.class)
