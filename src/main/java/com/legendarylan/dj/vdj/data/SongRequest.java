@@ -8,7 +8,19 @@ public class SongRequest {
 
     @Override
     public String toString() {
-        return "{'filePath': '" + this.getFilePath() + "'}";
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        sb.append("{'filePath': ");
+        sb.append("'").append(this.getFilePath()).append("', ");
+        sb.append(" 'artist': ");
+        sb.append("'").append(this.getArtist()).append("', ");
+        sb.append(" 'title': ");
+        sb.append("'").append(this.getTitle()).append("', ");
+        sb.append("'rated': ");
+        sb.append("'").append(this.isRated()).append("'");
+        sb.append("}");
+        //return "{'filePath': '" + this.getFilePath() + "'}";
+        return sb.toString();
     }
 
     public String getFilePath() {

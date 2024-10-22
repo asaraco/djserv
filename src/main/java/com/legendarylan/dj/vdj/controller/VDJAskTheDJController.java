@@ -44,7 +44,7 @@ public class VDJAskTheDJController {
      */
     @RequestMapping(path="findSongByIdForAskTheDJ", method= RequestMethod.POST)
     @ResponseBody
-    ResponseEntity<?> requestSong(String id) {
+    ResponseEntity<?> requestSong(String id, String name) {
         List<Track> allTracks = XmlController.getFullDbSongs();
 
         List<Track> highlander = (List<Track>) allTracks.stream().filter(e -> e.getId()==Integer.parseInt(id)).toList();
@@ -53,7 +53,7 @@ public class VDJAskTheDJController {
             Track t = highlander.get(0);
             String sendToAskTheDJ = t.getArtist() + " - " + t.getTitle();
             // Use this string in "Ask The DJ" request
-            ResponseEntity<?> result = askTheDJ(sendToAskTheDJ);
+            ResponseEntity<?> result = askTheDJ(sendToAskTheDJ, name);
 
             System.out.println(result.getBody());
 
@@ -68,11 +68,12 @@ public class VDJAskTheDJController {
      * Sends the specified message string to the "Ask the DJ" API.
      * The message is typically an artist & title of a song, but could be something else.
      * @param message - String
+     * @param name - String
      * @return
      */
     @RequestMapping(path="requestAskTheDJ", method=RequestMethod.POST)
     @ResponseBody
-    ResponseEntity<?> askTheDJ(String message) {
+    ResponseEntity<?> askTheDJ(String message, String name) {
         // Call VDJ 'Ask The DJ' API
         String uri = "https://virtualdj.com/ask/Legendary__LAN";
         RestTemplate restTemplate = new RestTemplate();
@@ -80,7 +81,7 @@ public class VDJAskTheDJController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String,String> parms = new LinkedMultiValueMap<>();
-        parms.add("name","sirlemmingRequest");
+        parms.add("name",name);
         parms.add("message",message);
         logger.debug(parms);
         HttpEntity<MultiValueMap<String,String>> entity = new HttpEntity<>(parms, headers);

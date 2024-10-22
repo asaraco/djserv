@@ -6,6 +6,7 @@ import com.legendarylan.dj.vdj.data.SongRequest;
 import com.legendarylan.dj.vdj.data.Track;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -34,8 +35,12 @@ public class VDJNetworkControl {
     private final XmlController xmlController;
 
     private static List<SongRequest> requestQueue = new ArrayList<>();
-    private static String vdjScriptExecUri = "http://localhost:8082/execute?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
-    private static String vdjScriptQueryUri = "http://localhost:8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
+
+    @Value("${app.legendarydj.localhost-ip}")
+    private static final String localhostIp = "localhost";
+
+    private static String vdjScriptExecUri = "http://"+localhostIp+":8082/execute?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
+    private static String vdjScriptQueryUri = "http://"+localhostIp+":8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
 
     /**
      * Constructor.
@@ -63,6 +68,7 @@ public class VDJNetworkControl {
     ResponseEntity<?> requestDirect(@RequestBody SongRequest newRequest) throws IOException {
         String method = "requestDirect";
         logger.trace("{}: ENTER", method);
+        logger.info("REQUESTED: " + newRequest.toString());
         // REQUEST QUEUE MANAGEMENT
         // Check request queue to see if any songs from it have already been played.
         // Remove them if necessary, so we can correctly assess the length of the request queue.
@@ -100,7 +106,7 @@ public class VDJNetworkControl {
         scriptBody = scriptBody.replace(" ", "%20");
         logger.debug(scriptBody);
         // ALTERNATE METHOD TO SOLVE ENCODING
-        UriComponents myUri = UriComponentsBuilder.fromHttpUrl("http://localhost:8082")
+        UriComponents myUri = UriComponentsBuilder.fromHttpUrl("http://"+localhostIp+":8082")
                 .path("/execute")
                 .queryParam("script",scriptBody)
                 .queryParam("bearer","legendary")
