@@ -3,6 +3,7 @@ package com.legendarylan.dj.vdj.data;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.xml.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +42,7 @@ public class Track {
     private String grouping;
     private String sortArtist;
     private boolean onlineSource;
+    private LocalDateTime firstSeen;
 
     public Track() {
         this.id = idCounter;
@@ -136,7 +138,6 @@ public class Track {
         return this.tags.getYear();
     }
 
-    @JsonIgnore
     public Integer getRating() {
         return this.tags.getStars();
     }
@@ -219,5 +220,13 @@ public class Track {
 
     public boolean isOnlineSource() {
         return this.getLink()!=null;
+    }
+
+    public LocalDateTime getFirstSeen() {
+        return this.getInfos().getFirstSeenDateTime();
+    }
+
+    public void setFirstSeen(LocalDateTime firstSeen) {
+        this.firstSeen = firstSeen;
     }
 }

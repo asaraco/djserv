@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -154,7 +155,11 @@ public class XmlController {
         if (allTracks==null) {
             reloadDatabase();
         }
-        return allTracks.stream().filter(e -> e.getRating()==0 && e.getFilePath().contains("LANtrax")).toList();
+        return allTracks.stream().filter(
+                e -> e.getRating()==0
+                        && e.getFilePath().contains("LANtrax")
+                        && e.getFirstSeen().isAfter(LocalDateTime.now().minusDays(1))
+                ).toList();
     }
 
     /**
