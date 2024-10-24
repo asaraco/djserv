@@ -52,7 +52,7 @@ public class Controllers {
 			}
 			logger.info("File uploaded: {}{}", filePath, fileName);
 			return ResponseEntity.ok("{\"message\": \"File uploaded successfully - " + fileName + "\"}");
-		}			
+		}
 	}
 	
 	/**

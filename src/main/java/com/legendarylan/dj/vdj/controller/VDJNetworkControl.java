@@ -38,6 +38,8 @@ public class VDJNetworkControl {
 
     @Value("${app.legendarydj.localhost-ip}")
     private static final String localhostIp = "localhost";
+    @Value("${app.legendarydj.file-path}")
+    private static final String filePath = "L:\\LANtrax";
 
     private static String vdjScriptExecUri = "http://"+localhostIp+":8082/execute?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
     private static String vdjScriptQueryUri = "http://"+localhostIp+":8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
@@ -138,6 +140,37 @@ public class VDJNetworkControl {
     @ResponseBody
     ResponseEntity<?> getSongPosition() {
         return ResponseEntity.ok(vdjGetSongPosition());
+    }
+
+    @RequestMapping(path="refreshSongBrowser", method=RequestMethod.GET)
+    @ResponseBody
+    ResponseEntity<?> refreshSongBrowser() {
+        // Call VDJ Network Control Plugin
+        RestTemplate restTemplate = new RestTemplate();
+        String sanitizedPath = filePath.replace("/", "%2F");
+        sanitizedPath = sanitizedPath.replace(":", "%3A");
+        sanitizedPath = sanitizedPath.replace("\\", "%5C");
+        //String scriptBody = "browser_gotofolder \"" + sanitizedPath + "\" & wait 50ms & goto_last_folder";
+        String scriptBody = "browser_gotofolder \"" + sanitizedPath + "\" & browser_sort \"-First Seen\" & browser_window 'songs' & browser_scroll top & browsed_file_analyze & wait 50ms & goto_last_folder";
+        scriptBody = scriptBody.replace("&", "%26");
+        scriptBody = scriptBody.replace("\"", "%22");
+        scriptBody = scriptBody.replace(" ", "%20");
+        logger.debug(scriptBody);
+        // ALTERNATE METHOD TO SOLVE ENCODING
+        UriComponents myUri = UriComponentsBuilder.fromHttpUrl("http://"+localhostIp+":8082")
+                .path("/execute")
+                .queryParam("script",scriptBody)
+                .queryParam("bearer","legendary")
+                .build();
+        logger.debug("BUILT URI: {}", myUri);
+        URI converted = URI.create(myUri.toString());
+        // Do the call
+        String result = restTemplate.getForObject(converted, String.class);
+        logger.debug(result);
+        // Refresh cached database
+        this.xmlController.forceReloadDatabase();
+        // Return
+        return ResponseEntity.ok(result);
     }
 
     public static int vdjGetTimeRemaining() {
