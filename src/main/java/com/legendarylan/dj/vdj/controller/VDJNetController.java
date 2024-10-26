@@ -1,28 +1,19 @@
 package com.legendarylan.dj.vdj.controller;
 
-import com.legendarylan.dj.vdj.data.Playlist;
 import com.legendarylan.dj.vdj.data.PlaylistSong;
 import com.legendarylan.dj.vdj.data.SongRequest;
-import com.legendarylan.dj.vdj.data.Track;
+import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Controller class containing REST endpoints
@@ -30,26 +21,35 @@ import java.util.Map;
  */
 @RestController
 @CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.localhost-ip}:80", "http://localhost:80"})
-public class VDJNetworkControl {
-    private static Logger logger = LogManager.getLogger(VDJNetworkControl.class);
+public class VDJNetController {
+    private static Logger logger = LogManager.getLogger(VDJNetController.class);
     private final XmlController xmlController;
 
     private static List<SongRequest> requestQueue = new ArrayList<>();
 
-    @Value("${app.legendarydj.localhost-ip}")
-    private static final String localhostIp = "localhost";
-    @Value("${app.legendarydj.file-path}")
-    private static final String filePath = "L:\\LANtrax";
-
-    private static String vdjScriptExecUri = "http://"+localhostIp+":8082/execute?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
-    private static String vdjScriptQueryUri = "http://"+localhostIp+":8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
+    @Value("${app.legendarydj.localhost-ip:localhost}")
+    private String localhostIp;
+    @Value("${app.legendarydj.file-path:L:\\LANtrax}")
+    private String filePath;
+    @Value("${app.vdj.networkcontrol.token}")
+    private String token;
+    private String baseUri;
 
     /**
      * Constructor.
      * @param xmlController - Injected to provide access to the other controller class
      */
-    public VDJNetworkControl(XmlController xmlController) {
+    public VDJNetController(XmlController xmlController) {
         this.xmlController = xmlController;
+    }
+
+    @PostConstruct
+    private void initialize() {
+        this.baseUri = "http://"+localhostIp+":8082";
+        logger.debug("INIT: localhostIp={}",localhostIp);
+        logger.debug("INIT: filePath={}",filePath);
+        logger.debug("INIT: baseUri={}", baseUri);
+        logger.debug("INIT: token={}", token);
     }
 
     /**
@@ -83,13 +83,9 @@ public class VDJNetworkControl {
         logger.debug("{}: Request queue:\n{}", method, requestQueue);
         // Add request to queue
         requestQueue.add(newRequest);
-        // Call VDJ Network Control Plugin
-        RestTemplate restTemplate = new RestTemplate();
-        String sanitizedPath = URLDecoder.decode(newRequest.getFilePath(), Charset.defaultCharset());
-        //sanitizedPath = sanitizedPath.replace(":", "%3A");
-        sanitizedPath = sanitizedPath.replace("/", "%2F");
-        sanitizedPath = sanitizedPath.replace("\\", "%5C");
-
+        // Prepare strings
+        String decodedPath = URLDecoder.decode(newRequest.getFilePath(), Charset.defaultCharset());
+        String sanitizedPath = VDJNetworkControlInterface.sanitizePath(decodedPath);
         String scriptBody = "";
         // If Deezer result, tell VDJ to do a search on it first, which will hopefully force it to get the online track metadata for its database
         // (Otherwise, the request still works but it shows as a blank track)
@@ -102,26 +98,8 @@ public class VDJNetworkControl {
         if (!newRequest.isRated()) {
             scriptBody += " & browsed_song 'rating' 1";
         }
-
-        scriptBody = scriptBody.replace("&", "%26");
-        scriptBody = scriptBody.replace("\"", "%22");
-        scriptBody = scriptBody.replace(" ", "%20");
-        logger.debug(scriptBody);
-        // ALTERNATE METHOD TO SOLVE ENCODING
-        UriComponents myUri = UriComponentsBuilder.fromHttpUrl("http://"+localhostIp+":8082")
-                .path("/execute")
-                .queryParam("script",scriptBody)
-                .queryParam("bearer","legendary")
-                .build();
-        logger.debug("BUILT URI: {}", myUri);
-        URI converted = URI.create(myUri.toString());
-        // Prepare URL params
-        Map<String,String> params = new HashMap<>();
-        params.put("script",scriptBody);
-        params.put("bearer","legendary");
-        // Do the call
-        String result = restTemplate.getForObject(converted, String.class);
-        System.out.println(result);
+        //String sanitizedScript = VDJNetworkControlInterface.sanitizeScript(scriptBody);
+        String result = VDJNetworkControlInterface.doScriptExec(baseUri, scriptBody, token);
         // If it was a previously unrated song (new upload), refresh database to move it into the main area
         if (!newRequest.isRated()) {
             this.xmlController.forceReloadDatabase();
@@ -133,74 +111,25 @@ public class VDJNetworkControl {
     @RequestMapping(path="getTimeRemaining", method=RequestMethod.GET)
     @ResponseBody
     ResponseEntity<?> getTimeRemaining() {
-        return ResponseEntity.ok(vdjGetTimeRemaining());
+        return ResponseEntity.ok(VDJNetworkControlInterface.getTimeRemaining(baseUri, token));
     }
 
     @RequestMapping(path="getSongPosition", method=RequestMethod.GET)
     @ResponseBody
     ResponseEntity<?> getSongPosition() {
-        return ResponseEntity.ok(vdjGetSongPosition());
+        return ResponseEntity.ok(VDJNetworkControlInterface.getSongPosition(baseUri, token));
     }
 
     @RequestMapping(path="refreshSongBrowser", method=RequestMethod.GET)
     @ResponseBody
     ResponseEntity<?> refreshSongBrowser() {
-        // Call VDJ Network Control Plugin
-        RestTemplate restTemplate = new RestTemplate();
-        String sanitizedPath = filePath.replace("/", "%2F");
-        sanitizedPath = sanitizedPath.replace(":", "%3A");
-        sanitizedPath = sanitizedPath.replace("\\", "%5C");
-        //String scriptBody = "browser_gotofolder \"" + sanitizedPath + "\" & wait 50ms & goto_last_folder";
+        String sanitizedPath = VDJNetworkControlInterface.sanitizePath(filePath);
         String scriptBody = "browser_gotofolder \"" + sanitizedPath + "\" & browser_sort \"-First Seen\" & browser_window 'songs' & browser_scroll top & browsed_file_analyze & wait 50ms & goto_last_folder";
-        scriptBody = scriptBody.replace("&", "%26");
-        scriptBody = scriptBody.replace("\"", "%22");
-        scriptBody = scriptBody.replace(" ", "%20");
-        logger.debug(scriptBody);
-        // ALTERNATE METHOD TO SOLVE ENCODING
-        UriComponents myUri = UriComponentsBuilder.fromHttpUrl("http://"+localhostIp+":8082")
-                .path("/execute")
-                .queryParam("script",scriptBody)
-                .queryParam("bearer","legendary")
-                .build();
-        logger.debug("BUILT URI: {}", myUri);
-        URI converted = URI.create(myUri.toString());
-        // Do the call
-        String result = restTemplate.getForObject(converted, String.class);
-        logger.debug(result);
+        String sanitizedScript = VDJNetworkControlInterface.sanitizeScript(scriptBody);
+        String result = VDJNetworkControlInterface.doScriptExec(baseUri, sanitizedScript, token);
         // Refresh cached database
         this.xmlController.forceReloadDatabase();
         // Return
         return ResponseEntity.ok(result);
     }
-
-    public static int vdjGetTimeRemaining() {
-        // Call VDJ Network Control Plugin
-        RestTemplate restTemplate = new RestTemplate();
-        String scriptBody = "deck active get_time remain";
-        logger.debug(scriptBody);
-        // Prepare URL params
-        Map<String,String> params = new HashMap<>();
-        params.put("script",scriptBody);
-        params.put("bearer","legendary");
-        // Do the call
-        String result = restTemplate.getForObject(vdjScriptQueryUri, String.class, params);
-        System.out.println(result);
-        return Integer.parseInt(result);
-    }
-
-    public static double vdjGetSongPosition() {
-        // Call VDJ Network Control Plugin
-        RestTemplate restTemplate = new RestTemplate();
-        String scriptBody = "deck active get_position";
-        logger.debug(scriptBody);
-        // Prepare URL params
-        Map<String,String> params = new HashMap<>();
-        params.put("script",scriptBody);
-        params.put("bearer","legendary");
-        // Do the call
-        String result = restTemplate.getForObject(vdjScriptQueryUri, String.class, params);
-        System.out.println(result);
-        return Double.parseDouble(result);
-    }
-
 }

@@ -7,6 +7,7 @@ import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -41,6 +42,14 @@ public class XmlController {
 
     private boolean dbOutdated = false;
 
+    @Value("${app.legendarydj.localhost-ip:localhost}")
+    private String localhostIp;
+    @Value("${app.vdj.networkcontrol.token}")
+    private String token;
+    private String baseUri;
+    @Value("${app.legendarydj.newdays:1}")
+    private int newDays;
+
     private static String vdjScriptQueryUri = "http://localhost:8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
     //TODO: Default to some kind of empty list if files don't exist
     private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
@@ -48,6 +57,15 @@ public class XmlController {
     private static File automixQueue = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\Sideview\\automix.vdjfolder");
     private static File historyPath = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\History\\");
     private static File historyPlaylistFile;
+
+    @PostConstruct
+    private void initialize() {
+        this.baseUri = "http://"+this.localhostIp+":8082";
+        logger.debug("INIT: localhostIp={}",localhostIp);
+        logger.debug("INIT: baseUri={}", baseUri);
+        logger.debug("INIT: token={}", token);
+        logger.debug("INIT: newDays={}", newDays);
+    }
 
     /**
      * Initialize or force a reload of the entire database
@@ -155,10 +173,11 @@ public class XmlController {
         if (allTracks==null) {
             reloadDatabase();
         }
+        logger.info("newDays = {}", newDays);
         return allTracks.stream().filter(
                 e -> e.getRating()==0
                         && e.getFilePath().contains("LANtrax")
-                        && e.getFirstSeen().isAfter(LocalDateTime.now().minusDays(1))
+                        && e.getFirstSeen().isAfter(LocalDateTime.now().minusDays(newDays))
                 ).toList();
     }
 
@@ -199,8 +218,8 @@ public class XmlController {
         double duration = vdjfolder.getSongs().get(0).getSonglength();
         logger.debug("Current track: {} ({})", vdjfolder.getSongs().get(0).getTitle(), duration);
         // Get current track time data from webservices
-        int timeRemaining = VDJNetworkControl.vdjGetTimeRemaining();
-        double trackProgress = VDJNetworkControl.vdjGetSongPosition();
+        int timeRemaining = VDJNetworkControlInterface.getTimeRemaining(baseUri,token);
+        double trackProgress = VDJNetworkControlInterface.getSongPosition(baseUri,token);
         PlaylistQueue pq = new PlaylistQueue(this.dbOutdated, duration, trackProgress, timeRemaining);
         pq.setName("Automix Queue");
         pq.setPlaylistTracks(vdjfolder.getSongs());

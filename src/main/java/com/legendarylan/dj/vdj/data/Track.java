@@ -185,10 +185,31 @@ public class Track {
 
     public double getDuration() {
         if (this.duration==0d) {
-            if (this.infos==null) {
+            if (this.infos==null && this.pois==null) {
                 this.duration = 0d;
             } else {
                 this.duration = this.infos.getSongLength();
+                if (this.pois != null) {   // Use POIs to more accurately determine greatest possible duration of song playback
+                    double startPoint = this.duration;  // Highest possible start point, keep checking for lower
+                    double endPoint = 0d;               // Lowest possible end point, keep checking for higher
+                    for (Poi p : this.pois) {
+                        String pSubtype = p.getPoint();
+                        if (p.getPoint()!=null) { // some POIs are beatgrid markers and won't have this, should be skipped
+                            double pPos = p.getPos();
+                            if (pSubtype.equalsIgnoreCase("cutStart") || pSubtype.equalsIgnoreCase("fadeStart") || pSubtype.equalsIgnoreCase("tempoStart")) {
+                                if (pPos < startPoint) startPoint = pPos;
+                            }
+                            if (pSubtype.equalsIgnoreCase("cutEnd") || pSubtype.equalsIgnoreCase("fadeEnd") || pSubtype.equalsIgnoreCase("tempoEnd")) {
+                                if (pPos > endPoint) endPoint = pPos;
+                            }
+                        }
+                    }
+                    // Negative or less than true duration should probably never happen, but just in case...
+                    double calculatedDuration = endPoint - startPoint;
+                    if (calculatedDuration > 0d && calculatedDuration < this.duration) {
+                        this.duration = calculatedDuration;
+                    }
+                }
             }
         }
         return this.duration;
