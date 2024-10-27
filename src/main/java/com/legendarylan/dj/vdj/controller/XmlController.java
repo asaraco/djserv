@@ -9,6 +9,8 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
@@ -66,12 +68,17 @@ public class XmlController {
         logger.debug("INIT: token={}", token);
         logger.debug("INIT: newDays={}", newDays);
     }
-
+/*
+    @EventListener(ApplicationReadyEvent.class)
+    public void doSomethingAfterStartup() {
+        System.out.println("XML Controller starting up");
+        reloadDatabase();
+        reloadQueue();
+    }
+*/
     /**
      * Initialize or force a reload of the entire database
      */
-    //@PostConstruct
-    //@GetMapping("/forceReloadDatabase")
     private void reloadDatabase() {
         this.dbOutdated = true;
         logger.debug("Reloading database");
@@ -79,6 +86,7 @@ public class XmlController {
         allTracks = dbL.getSongs();
         VirtualDJDatabase dbC = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseC));
         allTracks.addAll(dbC.getSongs());
+        logger.debug("Database reloaded: {} tracks", allTracks.size());
     }
 
     @PostConstruct
@@ -87,6 +95,7 @@ public class XmlController {
     public boolean forceReloadDatabase() {
         logger.debug("Forcing reload of database");
         this.reloadDatabase();
+        //this.cacheManagerVDJ.getCache("vdjDatabase").clear();
         return true;
     }
 
@@ -108,13 +117,6 @@ public class XmlController {
         return true;
     }
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void doSomethingAfterStartup() {
-        System.out.println("XML Controller starting up");
-        reloadDatabase();
-        reloadQueue();
-    }
-
     /**
      * Returns the full list of songs (for internal use)
      * @return List<Track>
@@ -128,6 +130,7 @@ public class XmlController {
      * @return List<Track>
      * @throws FileNotFoundException - This should never happen if configured correctly
      */
+    @Cacheable("vdjDatabase")
     @GetMapping("/getAllTracks")
     public List<Track> getAllTracks() throws FileNotFoundException {
         reloadDatabase();
@@ -139,7 +142,6 @@ public class XmlController {
      * @return List<Track>
      * @throws FileNotFoundException - This should never happen if configured correctly
      */
-    @Cacheable("vdjDatabase")
     @GetMapping("/getRatedTracks")
     public List<Track> getRatedTracks() throws FileNotFoundException {
         if (allTracks==null) {
@@ -235,14 +237,12 @@ public class XmlController {
     public Playlist getPlayHistory() throws IOException {
         Playlist p = new Playlist();
         List<String> fileLines = Files.readAllLines(Paths.get(historyPlaylistFile.toURI()));
-        //logger.debug(fileLines);
         List<PlaylistSong> pSongs = new ArrayList<>();
         PlaylistSong currentPS = new PlaylistSong();
         for (String line : fileLines) {
             if (line.startsWith("#EXTVDJ:")) {
                 String sArtist = "";
                 String sTitle = "";
-                //logger.debug("EXTVDJ - " + line);
                 PlaylistSong ps = new PlaylistSong();
                 int iArtistStart = line.indexOf("<artist>");
                 int iArtistEnd = line.indexOf("</artist");
@@ -254,7 +254,6 @@ public class XmlController {
                 ps.setTitle(sTitle);
                 currentPS = ps;
             } else {
-                //logger.debug("NOT EXTVDJ - " + line);
                 currentPS.setPath(line);
                 pSongs.add(currentPS);
             }

@@ -102,7 +102,8 @@ public class VDJNetController {
         String result = VDJNetworkControlInterface.doScriptExec(baseUri, scriptBody, token);
         // If it was a previously unrated song (new upload), refresh database to move it into the main area
         if (!newRequest.isRated()) {
-            this.xmlController.forceReloadDatabase();
+            boolean reload = this.xmlController.forceReloadDatabase();
+            logger.debug("{}: Reload complete", method);
         }
         // Finish
         return ResponseEntity.ok(result);
