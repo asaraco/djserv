@@ -2,6 +2,7 @@ package com.legendarylan.dj.vdj.controller;
 
 import com.legendarylan.dj.vdj.data.PlaylistSong;
 import com.legendarylan.dj.vdj.data.SongRequest;
+import com.legendarylan.dj.vdj.data.Track;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -102,8 +103,17 @@ public class VDJNetController {
         String result = VDJNetworkControlInterface.doScriptExec(baseUri, scriptBody, token);
         // If it was a previously unrated song (new upload), refresh database to move it into the main area
         if (!newRequest.isRated()) {
-            boolean reload = this.xmlController.forceReloadDatabase();
-            logger.debug("{}: Reload complete", method);
+            //boolean reload = this.xmlController.forceReloadDatabase();
+            //logger.debug("{}: Reload complete", method);
+            // AMS 10/27/2024 - Trying to force an update server-side before trying to get data client-side
+            ResponseEntity<String> res2 = (ResponseEntity<String>) refreshSongBrowser();
+            if (res2.getBody().equalsIgnoreCase("true")) {
+                logger.info("{}: Finished VDJ browser refresh script", method);
+                this.xmlController.forceReloadDatabase();
+                logger.info("{}: Finished VDJ database reload", method);
+            } else {
+                logger.info("{}: Refresh didn't work, sorry", method);
+            }
         }
         // Finish
         return ResponseEntity.ok(result);
@@ -123,7 +133,7 @@ public class VDJNetController {
 
     @RequestMapping(path="refreshSongBrowser", method=RequestMethod.GET)
     @ResponseBody
-    ResponseEntity<?> refreshSongBrowser() {
+    public ResponseEntity<?> refreshSongBrowser() {
         String sanitizedPath = VDJNetworkControlInterface.sanitizePath(filePath);
         String scriptBody = "browser_gotofolder \"" + sanitizedPath + "\" & browser_sort \"-First Seen\" & browser_window 'songs' & browser_scroll top & browsed_file_analyze & wait 50ms & goto_last_folder";
         String sanitizedScript = VDJNetworkControlInterface.sanitizeScript(scriptBody);

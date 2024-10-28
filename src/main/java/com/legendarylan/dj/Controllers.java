@@ -4,6 +4,8 @@ import java.io.File;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 
+import com.legendarylan.dj.vdj.controller.VDJNetController;
+import com.legendarylan.dj.vdj.controller.XmlController;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +22,25 @@ import org.springframework.web.multipart.MultipartFile;
 @CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200"})
 public class Controllers {
 	private static Logger logger = LogManager.getLogger(Controllers.class);
+
+	// Injection
+	private final VDJNetController vdjNetController;
+	private final XmlController xmlController;
+
+	/**
+	 * Constructor.
+	 * @param vdjNetController - Injected to provide access to the other controller class
+	 */
+	public Controllers(VDJNetController vdjNetController, XmlController xmlController) {
+		this.vdjNetController = vdjNetController;
+        this.xmlController = xmlController;
+    }
 	
 	/* Get application properties */
 	@Value("${app.legendarydj.file-path}")
 	private String filePath;
+	@Value("${app.legendarydj.mode}")
+	private String mode;
 	
 	private static ArrayList<Integer> allAssignedIDs = new ArrayList<Integer>();
 	static {
@@ -51,6 +68,18 @@ public class Controllers {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 			}
 			logger.info("File uploaded: {}{}", filePath, fileName);
+			// AMS 10/27/2024 - Trying a server-side library update since client-side is harder to sync
+			if (mode.equalsIgnoreCase("vdj")) {
+				ResponseEntity<String> result = (ResponseEntity<String>) this.vdjNetController.refreshSongBrowser();
+				if (result.getBody().equalsIgnoreCase("true")) {
+					logger.info("Finished VDJ browser refresh script");
+					this.xmlController.forceReloadDatabase();
+					logger.info("Finished VDJ database reload");
+				} else {
+					logger.info("Refresh didn't work, sorry");
+				}
+			}
+			// Return
 			return ResponseEntity.ok("{\"message\": \"File uploaded successfully - " + fileName + "\"}");
 		}
 	}
