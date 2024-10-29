@@ -51,6 +51,8 @@ public class XmlController {
     private String baseUri;
     @Value("${app.legendarydj.newdays:1}")
     private int newDays;
+    @Value("${app.vdj.truncate-queue:5}")
+    private int truncateQueue;
 
     private static String vdjScriptQueryUri = "http://localhost:8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
     //TODO: Default to some kind of empty list if files don't exist
@@ -216,15 +218,17 @@ public class XmlController {
     public PlaylistQueue getQueue() {
         // Get queue from file
         VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
+        // Truncate to just the ones we want to display
+        List<PlaylistSong> shortList = vdjfolder.getSongs().subList(0,truncateQueue);
         // Get current track duration
-        double duration = vdjfolder.getSongs().get(0).getSonglength();
-        logger.debug("Current track: {} ({})", vdjfolder.getSongs().get(0).getTitle(), duration);
+        double duration = shortList.get(0).getSonglength();
+        logger.debug("Current track: {} ({})", shortList.get(0).getTitle(), duration);
         // Get current track time data from webservices
         int timeRemaining = VDJNetworkControlInterface.getTimeRemaining(baseUri,token);
         double trackProgress = VDJNetworkControlInterface.getSongPosition(baseUri,token);
         PlaylistQueue pq = new PlaylistQueue(this.dbOutdated, duration, trackProgress, timeRemaining);
         pq.setName("Automix Queue");
-        pq.setPlaylistTracks(vdjfolder.getSongs());
+        pq.setPlaylistTracks(shortList);
         return pq;
     }
 
