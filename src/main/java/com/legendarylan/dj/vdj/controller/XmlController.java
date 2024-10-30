@@ -2,6 +2,7 @@ package com.legendarylan.dj.vdj.controller;
 
 import com.legendarylan.dj.vdj.data.*;
 import jakarta.annotation.PostConstruct;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.comparator.LastModifiedFileComparator;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.logging.log4j.LogManager;
@@ -16,12 +17,10 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.web.bind.annotation.*;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.transform.stream.StreamSource;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -89,6 +88,16 @@ public class XmlController {
         VirtualDJDatabase dbC = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseC));
         allTracks.addAll(dbC.getSongs());
         logger.debug("Database reloaded: {} tracks", allTracks.size());
+    }
+
+    /**
+     * Set the amount of songs to display in the queue
+     * IN ADDITION TO the base amount configured.
+     * Actual "Automix Queue" stored by VDJ is much longer,
+     * but we truncate it to the base amount + requests.
+     */
+    public void setAdditionalQueueSize(int additionalSongs) {
+        this.truncateQueue = this.truncateQueue + additionalSongs;
     }
 
     @PostConstruct
@@ -215,9 +224,15 @@ public class XmlController {
      * @return PlaylistQueue
      */
     @GetMapping("/getQueue")
-    public PlaylistQueue getQueue() {
+    public PlaylistQueue getQueue() throws SAXParseException, IOException {
         // Get queue from file
-        VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
+        logger.debug("Getting Queue");
+        FileReader reader = new FileReader(automixQueue);
+        StreamSource aq = new StreamSource(reader);
+        logger.debug(aq.getReader());
+        VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(aq);
+        reader.close();
+        logger.debug("Got Queue");
         // Truncate to just the ones we want to display
         List<PlaylistSong> shortList = vdjfolder.getSongs().subList(0,truncateQueue);
         // Get current track duration
@@ -240,10 +255,13 @@ public class XmlController {
     @GetMapping("/getPlayHistory")
     public Playlist getPlayHistory() throws IOException {
         Playlist p = new Playlist();
+        //logger.debug("Getting History");
         List<String> fileLines = Files.readAllLines(Paths.get(historyPlaylistFile.toURI()));
+        //logger.debug("Got History");
         List<PlaylistSong> pSongs = new ArrayList<>();
         PlaylistSong currentPS = new PlaylistSong();
         for (String line : fileLines) {
+            //logger.debug("HISTORY FILE LINE - {}", line);
             if (line.startsWith("#EXTVDJ:")) {
                 String sArtist = "";
                 String sTitle = "";

@@ -38,6 +38,8 @@ public class Track {
     private int id;
     private static int idCounter = 0;
     private List<String> crates;
+    private String searchTerms;
+    private String composer;
     private double duration;
     private String grouping;
     private String sortArtist;
@@ -249,5 +251,21 @@ public class Track {
 
     public void setFirstSeen(LocalDateTime firstSeen) {
         this.firstSeen = firstSeen;
+    }
+
+    public String getSearchTerms() {
+        return this.getTags().getSearchTerms();
+    }
+
+    public void setSearchTerms(String searchTerms) {
+        this.searchTerms = searchTerms;
+    }
+
+    public String getComposer() {
+        return this.tags.getComposer();
+    }
+
+    public void setComposer(String composer) {
+        this.composer = composer;
     }
 }

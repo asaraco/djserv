@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.xml.sax.SAXParseException;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -73,17 +74,48 @@ public class VDJNetController {
         logger.trace("{}: ENTER", method);
         logger.info("REQUESTED: " + newRequest.toString());
         // REQUEST QUEUE MANAGEMENT
-        // Check request queue to see if any songs from it have already been played.
+        // AMS 10/29/2024 - Changing this; it used to check play history, but that isn't necessarily accurate
+        //                  because if a song that was already played gets requested, it'll do a false positive.
+        //                  Checking if it's in the *upcoming* songs should be both more accurate and less expensive.
+        //                  This DOES depend on my "queue length" code being correct, however.
+        // Check request queue to see which songs from it are still upcoming in Automix.
+        // ***AMS*** TODO: Make sure this works even if you request something that already exists way ahead in the queue
         // Remove them if necessary, so we can correctly assess the length of the request queue.
+        logger.debug("{}: Request queue BEFORE:\n{}", method, requestQueue);
+        List<SongRequest> refreshedQueue = new ArrayList<>();   // temporary list of just whatever from the queue is still upcoming
         if (!requestQueue.isEmpty()) {
-            List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
-            for (PlaylistSong ps : alreadyPlayed) {
-                requestQueue.removeIf(sr -> sr.getFilePath().equalsIgnoreCase(ps.getPath()));
+            //List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
+            List<PlaylistSong> upcoming;
+            try {
+                upcoming = xmlController.getQueue().getPlaylistTracks();
+                boolean stillThere = false;
+                for (SongRequest sr : requestQueue) {
+                    for (PlaylistSong ps : upcoming) {
+                        if (sr.getFilePath().equals(ps.getPath())) {
+                            stillThere = true;
+                            break;
+                        }
+                    }
+                    if (stillThere) {
+                        refreshedQueue.add(sr);
+                    }
+                }
+                // after loop determining what's still there, rebuild the queue with what we've learned
+                requestQueue.clear();
+                requestQueue.addAll(refreshedQueue);
+            } catch (SAXParseException e) {
+                logger.error("{}: Exception occurred while parsing queue - {}", method, e.getMessage());
             }
+            /*
+            for (PlaylistSong ps : upcoming) { // If manual request queue has anything that's not *actually* queued anymore, remove it.
+                requestQueue.removeIf(sr -> !sr.getFilePath().equalsIgnoreCase(ps.getPath()));
+            }
+            */
+            xmlController.setAdditionalQueueSize(requestQueue.size());
         }
-        logger.debug("{}: Request queue:\n{}", method, requestQueue);
         // Add request to queue
         requestQueue.add(newRequest);
+        logger.debug("{}: Request queue AFTER:\n{}", method, requestQueue);
         // Prepare strings
         String decodedPath = URLDecoder.decode(newRequest.getFilePath(), Charset.defaultCharset());
         String sanitizedPath = VDJNetworkControlInterface.sanitizePath(decodedPath);
