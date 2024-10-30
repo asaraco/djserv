@@ -40,6 +40,8 @@ public class XmlController {
     private Jaxb2Marshaller marshaller;
 
     private static List<Track> allTracks = null;
+    // AMS 10/29/2024 - Trying to move this from VDJNetController to see if it helps
+    private List<SongRequest> requestQueue = new ArrayList<>();
 
     private boolean dbOutdated = false;
 
@@ -51,7 +53,8 @@ public class XmlController {
     @Value("${app.legendarydj.newdays:1}")
     private int newDays;
     @Value("${app.vdj.truncate-queue:5}")
-    private int truncateQueue;
+    private int truncateQueueBase;
+    private int truncateQueueSize;
 
     private static String vdjScriptQueryUri = "http://localhost:8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
     //TODO: Default to some kind of empty list if files don't exist
@@ -90,6 +93,60 @@ public class XmlController {
         logger.debug("Database reloaded: {} tracks", allTracks.size());
     }
 
+    public List<SongRequest> getRequestQueue() {
+        return this.requestQueue;
+    }
+
+    public void addRequestToQueue(SongRequest newRequest) {
+        String method = "addRequestToQueue";
+
+        logger.info("REQUESTED: " + newRequest.toString());
+        // REQUEST QUEUE MANAGEMENT
+        // AMS 10/29/2024 - Changing this; it used to check play history, but that isn't necessarily accurate
+        //                  because if a song that was already played gets requested, it'll do a false positive.
+        //                  Checking if it's in the *upcoming* songs should be both more accurate and less expensive.
+        //                  This DOES depend on my "queue length" code being correct, however.
+        // Check request queue to see which songs from it are still upcoming in Automix.
+        // ***AMS*** TODO: Make sure this works even if you request something that already exists way ahead in the queue
+        // Remove them if necessary, so we can correctly assess the length of the request queue.
+        logger.debug("{}: Request queue BEFORE:\n{}", method, requestQueue);
+        List<SongRequest> refreshedQueue = new ArrayList<>();   // temporary list of just whatever from the queue is still upcoming
+        if (!requestQueue.isEmpty()) {
+            //List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
+            List<PlaylistSong> upcoming;
+            try {
+                upcoming = this.getQueue().getPlaylistTracks();
+                boolean stillThere = false;
+                for (SongRequest sr : requestQueue) {
+                    for (PlaylistSong ps : upcoming) {
+                        if (sr.getFilePath().equals(ps.getPath())) {
+                            stillThere = true;
+                            break;
+                        }
+                    }
+                    if (stillThere) {
+                        refreshedQueue.add(sr);
+                    }
+                }
+                // after loop determining what's still there, rebuild the queue with what we've learned
+                requestQueue.clear();
+                requestQueue.addAll(refreshedQueue);
+            } catch (SAXParseException | IOException e) {
+                logger.error("{}: Exception occurred while parsing queue - {}", method, e.getMessage());
+            }
+            /*
+            for (PlaylistSong ps : upcoming) { // If manual request queue has anything that's not *actually* queued anymore, remove it.
+                requestQueue.removeIf(sr -> !sr.getFilePath().equalsIgnoreCase(ps.getPath()));
+            }
+            */
+            //this.setAdditionalQueueSize(requestQueue.size());
+        }
+        // Add request to queue
+        requestQueue.add(newRequest);
+        this.setAdditionalQueueSize(requestQueue.size());
+        logger.debug("{}: Request queue AFTER:\n{}", method, requestQueue);
+    }
+
     /**
      * Set the amount of songs to display in the queue
      * IN ADDITION TO the base amount configured.
@@ -97,7 +154,8 @@ public class XmlController {
      * but we truncate it to the base amount + requests.
      */
     public void setAdditionalQueueSize(int additionalSongs) {
-        this.truncateQueue = this.truncateQueue + additionalSongs;
+        this.truncateQueueSize = truncateQueueBase + additionalSongs;
+        logger.debug("Truncate queue to " + this.truncateQueueSize);
     }
 
     @PostConstruct
@@ -227,14 +285,17 @@ public class XmlController {
     public PlaylistQueue getQueue() throws SAXParseException, IOException {
         // Get queue from file
         logger.debug("Getting Queue");
+
         FileReader reader = new FileReader(automixQueue);
         StreamSource aq = new StreamSource(reader);
         logger.debug(aq.getReader());
         VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(aq);
         reader.close();
+
+        //VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
         logger.debug("Got Queue");
         // Truncate to just the ones we want to display
-        List<PlaylistSong> shortList = vdjfolder.getSongs().subList(0,truncateQueue);
+        List<PlaylistSong> shortList = vdjfolder.getSongs().subList(0,truncateQueueSize);
         // Get current track duration
         double duration = shortList.get(0).getSonglength();
         logger.debug("Current track: {} ({})", shortList.get(0).getTitle(), duration);

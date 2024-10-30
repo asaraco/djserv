@@ -27,7 +27,7 @@ public class VDJNetController {
     private static Logger logger = LogManager.getLogger(VDJNetController.class);
     private final XmlController xmlController;
 
-    private static List<SongRequest> requestQueue = new ArrayList<>();
+    //private static List<SongRequest> requestQueue = new ArrayList<>();
 
     @Value("${app.legendarydj.localhost-ip:localhost}")
     private String localhostIp;
@@ -73,6 +73,7 @@ public class VDJNetController {
         String method = "requestDirect";
         logger.trace("{}: ENTER", method);
         logger.info("REQUESTED: " + newRequest.toString());
+        /*
         // REQUEST QUEUE MANAGEMENT
         // AMS 10/29/2024 - Changing this; it used to check play history, but that isn't necessarily accurate
         //                  because if a song that was already played gets requested, it'll do a false positive.
@@ -106,16 +107,13 @@ public class VDJNetController {
             } catch (SAXParseException e) {
                 logger.error("{}: Exception occurred while parsing queue - {}", method, e.getMessage());
             }
-            /*
-            for (PlaylistSong ps : upcoming) { // If manual request queue has anything that's not *actually* queued anymore, remove it.
-                requestQueue.removeIf(sr -> !sr.getFilePath().equalsIgnoreCase(ps.getPath()));
-            }
-            */
             xmlController.setAdditionalQueueSize(requestQueue.size());
         }
         // Add request to queue
         requestQueue.add(newRequest);
         logger.debug("{}: Request queue AFTER:\n{}", method, requestQueue);
+         */
+        xmlController.addRequestToQueue(newRequest);
         // Prepare strings
         String decodedPath = URLDecoder.decode(newRequest.getFilePath(), Charset.defaultCharset());
         String sanitizedPath = VDJNetworkControlInterface.sanitizePath(decodedPath);
@@ -125,8 +123,10 @@ public class VDJNetController {
         if (sanitizedPath.contains("netsearch")) {
             scriptBody += "search_add \"" + newRequest.getArtist() + " " + newRequest.getTitle() + "\" & ";
         }
+        // AMS 10/29/2024 - Get request queue size from XmlController
+        int queueSize = xmlController.getRequestQueue().size();
         // Main request script
-        scriptBody += "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + requestQueue.size();
+        scriptBody += "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + queueSize;
         // If song isn't rated yet, rate it (this is important for new uploads to get into the main DB)
         if (!newRequest.isRated()) {
             scriptBody += " & browsed_song 'rating' 1";
