@@ -67,10 +67,12 @@ public class XmlController {
     @PostConstruct
     private void initialize() {
         this.baseUri = "http://"+this.localhostIp+":8082";
+        this.truncateQueueSize = this.truncateQueueBase;
         logger.debug("INIT: localhostIp={}",localhostIp);
         logger.debug("INIT: baseUri={}", baseUri);
         logger.debug("INIT: token={}", token);
         logger.debug("INIT: newDays={}", newDays);
+        logger.debug("INIT: truncateQueueSize={}", truncateQueueSize);
     }
 /*
     @EventListener(ApplicationReadyEvent.class)
@@ -295,6 +297,7 @@ public class XmlController {
         //VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
         logger.debug("Got Queue");
         // Truncate to just the ones we want to display
+        logger.debug("Truncating Queue to {}", truncateQueueSize);
         List<PlaylistSong> shortList = vdjfolder.getSongs().subList(0,truncateQueueSize);
         // Get current track duration
         double duration = shortList.get(0).getSonglength();
