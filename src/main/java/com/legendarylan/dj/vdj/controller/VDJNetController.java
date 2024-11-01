@@ -121,7 +121,7 @@ public class VDJNetController {
         // If Deezer result, tell VDJ to do a search on it first, which will hopefully force it to get the online track metadata for its database
         // (Otherwise, the request still works but it shows as a blank track)
         if (sanitizedPath.contains("netsearch")) {
-            scriptBody += "search_add \"" + newRequest.getArtist() + " " + newRequest.getTitle() + "\" & ";
+            scriptBody += "clear_search & wait 500ms & search_add \"" + newRequest.getArtist() + " " + newRequest.getTitle() + "\" & wait 3000ms & ";
         }
         // AMS 10/29/2024 - Get request queue size from XmlController
         int queueSize = xmlController.getRequestQueue().size();
@@ -133,13 +133,13 @@ public class VDJNetController {
         }
         //String sanitizedScript = VDJNetworkControlInterface.sanitizeScript(scriptBody);
         String result = VDJNetworkControlInterface.doScriptExec(baseUri, scriptBody, token);
-        // If it was a previously unrated song (new upload), refresh database to move it into the main area
-        if (!newRequest.isRated()) {
+        // If it was a previously unrated song AND not online sourced (new upload), refresh database to move it into the main area
+        if (!newRequest.isRated() && !sanitizedPath.contains("netsearch")) {
             //boolean reload = this.xmlController.forceReloadDatabase();
             //logger.debug("{}: Reload complete", method);
             // AMS 10/27/2024 - Trying to force an update server-side before trying to get data client-side
             ResponseEntity<String> res2 = (ResponseEntity<String>) refreshSongBrowser();
-            if (res2.getBody().equalsIgnoreCase("true")) {
+            if (res2!=null && res2.getBody().equalsIgnoreCase("true")) {
                 logger.info("{}: Finished VDJ browser refresh script", method);
                 this.xmlController.forceReloadDatabase();
                 logger.info("{}: Finished VDJ database reload", method);

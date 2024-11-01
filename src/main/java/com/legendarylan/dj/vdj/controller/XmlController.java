@@ -56,7 +56,6 @@ public class XmlController {
     private int truncateQueueBase;
     private int truncateQueueSize;
 
-    private static String vdjScriptQueryUri = "http://localhost:8082/query?script={script}&bearer={bearer}"; // ***AMS*** TODO: Replace with parameter
     //TODO: Default to some kind of empty list if files don't exist
     private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
     private static File vdjDatabaseL = new File("L:\\VirtualDJ\\database.xml");
