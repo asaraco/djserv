@@ -108,6 +108,8 @@ public class XmlController {
         //List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
         logger.info("{}: Truncated automix queue:\n{}", method, truncatedAutomixQueue);
         boolean stillThere = false;
+        // Remove first song in a temp version of the queue since that's the one currently playing
+
         for (SongRequest sr : requestQueue) {
             for (PlaylistSong ps : truncatedAutomixQueue) {
                 logger.info("{}: {} == {} ?", method, sr.getFilePath(), ps.getPath());
@@ -279,31 +281,30 @@ public class XmlController {
     public PlaylistQueue getQueue() throws SAXParseException, IOException {
         logger.info("GET AUTOMIX QUEUE");
         // Get queue from file
-        logger.debug("Getting Queue");
-
+        // AMS 10/2024 - For reasons I can't quite figure out we have to do this differently from the others to avoid 'Improper end of file' exceptions.
+        //VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
         FileReader reader = new FileReader(automixQueue);
         StreamSource aq = new StreamSource(reader);
-        logger.debug(aq.getReader());
         VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(aq);
         reader.close();
-
-        //VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
-        logger.debug("Got Queue");
         // Truncate to just the ones we want to display
         logger.debug("Truncating Queue to {}", truncateQueueSize);
         List<PlaylistSong> shortList = vdjfolder.getSongs().subList(0,truncateQueueSize);
         // Get current track duration
         double duration = shortList.get(0).getSonglength();
         logger.debug("Current track: {} ({})", shortList.get(0).getTitle(), duration);
-        truncatedAutomixQueue = shortList;    // AMS 10/31/2024 save this off for easy access by other methods
         // Get current track time data from webservices
         int timeRemaining = VDJNetworkControlInterface.getTimeRemaining(baseUri,token);
         double trackProgress = VDJNetworkControlInterface.getSongPosition(baseUri,token);
+        // Request Queue management - see if any requests are still in Automix queue and adjust "request queue" length as needed
+        truncatedAutomixQueue = shortList;    // AMS 10/31/2024 temporary variable to pass into method
+        checkReqQueueForCompletedRequests();
+        this.setAutomixQueueSize(requestQueue.size());
+        shortList = shortList.subList(0,truncateQueueSize);
+        // Finalize returned queue object
         PlaylistQueue pq = new PlaylistQueue(this.dbOutdated, duration, trackProgress, timeRemaining);
         pq.setName("Automix Queue");
         pq.setPlaylistTracks(shortList);
-        // Request Queue management - see if any requests are still in Automix queue and adjust "request queue" length as needed
-        checkReqQueueForCompletedRequests();
         return pq;
     }
 
