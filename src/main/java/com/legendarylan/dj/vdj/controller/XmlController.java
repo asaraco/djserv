@@ -2,19 +2,14 @@ package com.legendarylan.dj.vdj.controller;
 
 import com.legendarylan.dj.vdj.data.*;
 import jakarta.annotation.PostConstruct;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.comparator.LastModifiedFileComparator;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.event.EventListener;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.web.bind.annotation.*;
 import org.xml.sax.SAXParseException;
@@ -41,7 +36,8 @@ public class XmlController {
 
     private static List<Track> allTracks = null;
     // AMS 10/29/2024 - Trying to move this from VDJNetController to see if it helps
-    private List<SongRequest> requestQueue = new ArrayList<>();
+    private static List<SongRequest> requestQueue = new ArrayList<>();
+    private static List<PlaylistSong> truncatedAutomixQueue = new ArrayList<>();
 
     private boolean dbOutdated = false;
 
@@ -54,7 +50,7 @@ public class XmlController {
     private int newDays;
     @Value("${app.vdj.truncate-queue:5}")
     private int truncateQueueBase;
-    private int truncateQueueSize;
+    private static int truncateQueueSize;
 
     //TODO: Default to some kind of empty list if files don't exist
     private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
@@ -66,7 +62,7 @@ public class XmlController {
     @PostConstruct
     private void initialize() {
         this.baseUri = "http://"+this.localhostIp+":8082";
-        this.truncateQueueSize = this.truncateQueueBase;
+        truncateQueueSize = this.truncateQueueBase;
         logger.debug("INIT: localhostIp={}",localhostIp);
         logger.debug("INIT: baseUri={}", baseUri);
         logger.debug("INIT: token={}", token);
@@ -95,57 +91,41 @@ public class XmlController {
     }
 
     public List<SongRequest> getRequestQueue() {
-        return this.requestQueue;
+        return requestQueue;
     }
 
-    public void addRequestToQueue(SongRequest newRequest) {
-        String method = "addRequestToQueue";
-
-        logger.info("REQUESTED: " + newRequest.toString());
-        // REQUEST QUEUE MANAGEMENT
-        // AMS 10/29/2024 - Changing this; it used to check play history, but that isn't necessarily accurate
-        //                  because if a song that was already played gets requested, it'll do a false positive.
-        //                  Checking if it's in the *upcoming* songs should be both more accurate and less expensive.
-        //                  This DOES depend on my "queue length" code being correct, however.
-        // Check request queue to see which songs from it are still upcoming in Automix.
-        // ***AMS*** TODO: Make sure this works even if you request something that already exists way ahead in the queue
-        // Remove them if necessary, so we can correctly assess the length of the request queue.
-        logger.debug("{}: Request queue BEFORE:\n{}", method, requestQueue);
+    // REQUEST QUEUE MANAGEMENT
+    // AMS 10/29/2024 - Changing this; it used to check play history, but that isn't necessarily accurate
+    //                  because if a song that was already played gets requested, it'll do a false positive.
+    //                  Checking if it's in the *upcoming* songs should be both more accurate and less expensive.
+    //                  This DOES depend on my "queue length" code being correct, however.
+    // Check request queue to see which songs from it are still upcoming in Automix.
+    // Remove them if necessary, so we can correctly assess the length of the request queue.
+    public void checkReqQueueForCompletedRequests() {
+        String method = "checkReqQueueForCompletedRequests";
+        logger.info("{}: Request queue BEFORE:\n{}", method, requestQueue);
         List<SongRequest> refreshedQueue = new ArrayList<>();   // temporary list of just whatever from the queue is still upcoming
-        if (!requestQueue.isEmpty()) {
-            //List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
-            List<PlaylistSong> upcoming;
-            try {
-                upcoming = this.getQueue().getPlaylistTracks();
-                boolean stillThere = false;
-                for (SongRequest sr : requestQueue) {
-                    for (PlaylistSong ps : upcoming) {
-                        if (sr.getFilePath().equals(ps.getPath())) {
-                            stillThere = true;
-                            break;
-                        }
-                    }
-                    if (stillThere) {
-                        refreshedQueue.add(sr);
-                    }
+        //List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
+        logger.info("{}: Truncated automix queue:\n{}", method, truncatedAutomixQueue);
+        boolean stillThere = false;
+        for (SongRequest sr : requestQueue) {
+            for (PlaylistSong ps : truncatedAutomixQueue) {
+                logger.info("{}: {} == {} ?", method, sr.getFilePath(), ps.getPath());
+                if (sr.getFilePath().equals(ps.getPath())) {
+                    stillThere = true;
+                    logger.info("{}: Song {} is still there.", method, ps.getPath());
+                    break;
                 }
-                // after loop determining what's still there, rebuild the queue with what we've learned
-                requestQueue.clear();
-                requestQueue.addAll(refreshedQueue);
-            } catch (SAXParseException | IOException e) {
-                logger.error("{}: Exception occurred while parsing queue - {}", method, e.getMessage());
             }
-            /*
-            for (PlaylistSong ps : upcoming) { // If manual request queue has anything that's not *actually* queued anymore, remove it.
-                requestQueue.removeIf(sr -> !sr.getFilePath().equalsIgnoreCase(ps.getPath()));
+            if (stillThere) {
+                logger.info("Still there.");
+                refreshedQueue.add(sr);
             }
-            */
-            //this.setAdditionalQueueSize(requestQueue.size());
         }
-        // Add request to queue
-        requestQueue.add(newRequest);
-        this.setAdditionalQueueSize(requestQueue.size());
-        logger.debug("{}: Request queue AFTER:\n{}", method, requestQueue);
+        // after loop determining what's still there, rebuild the queue with what we've learned
+        requestQueue.clear();
+        requestQueue.addAll(refreshedQueue);
+        logger.info("{}: Request queue after cleanup:\n{}", method, requestQueue);
     }
 
     /**
@@ -154,9 +134,21 @@ public class XmlController {
      * Actual "Automix Queue" stored by VDJ is much longer,
      * but we truncate it to the base amount + requests.
      */
-    public void setAdditionalQueueSize(int additionalSongs) {
-        this.truncateQueueSize = truncateQueueBase + additionalSongs;
-        logger.debug("Truncate queue to " + this.truncateQueueSize);
+    public void setAutomixQueueSize(int additionalSongs) {
+        truncateQueueSize = this.truncateQueueBase + additionalSongs;
+        logger.info("ADDING TO QUEUE SIZE: {} + {} = {}", this.truncateQueueBase, additionalSongs, truncateQueueSize);
+    }
+
+    public void addRequestToReqQueue(SongRequest newRequest) {
+        String method = "addRequestToReqQueue";
+        logger.info("{}: REQUESTED: {}", method, newRequest.toString());
+        // REQUEST QUEUE MANAGEMENT
+        checkReqQueueForCompletedRequests();
+        logger.info("{}: CLEANED QUEUE, SIZE IS: {}", method, requestQueue.size());
+        // Add request to queue
+        requestQueue.add(newRequest);
+        logger.info("{}: ADDED TO REQUEST QUEUE, NEW SIZE IS: {}", method, requestQueue.size());
+        this.setAutomixQueueSize(requestQueue.size());
     }
 
     @PostConstruct
@@ -282,8 +274,10 @@ public class XmlController {
      * Invoke other webservices to fill in information about current track and database state.
      * @return PlaylistQueue
      */
+    @PostConstruct
     @GetMapping("/getQueue")
     public PlaylistQueue getQueue() throws SAXParseException, IOException {
+        logger.info("GET AUTOMIX QUEUE");
         // Get queue from file
         logger.debug("Getting Queue");
 
@@ -301,12 +295,15 @@ public class XmlController {
         // Get current track duration
         double duration = shortList.get(0).getSonglength();
         logger.debug("Current track: {} ({})", shortList.get(0).getTitle(), duration);
+        truncatedAutomixQueue = shortList;    // AMS 10/31/2024 save this off for easy access by other methods
         // Get current track time data from webservices
         int timeRemaining = VDJNetworkControlInterface.getTimeRemaining(baseUri,token);
         double trackProgress = VDJNetworkControlInterface.getSongPosition(baseUri,token);
         PlaylistQueue pq = new PlaylistQueue(this.dbOutdated, duration, trackProgress, timeRemaining);
         pq.setName("Automix Queue");
         pq.setPlaylistTracks(shortList);
+        // Request Queue management - see if any requests are still in Automix queue and adjust "request queue" length as needed
+        checkReqQueueForCompletedRequests();
         return pq;
     }
 

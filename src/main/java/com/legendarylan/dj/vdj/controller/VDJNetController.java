@@ -73,47 +73,8 @@ public class VDJNetController {
         String method = "requestDirect";
         logger.trace("{}: ENTER", method);
         logger.info("REQUESTED: " + newRequest.toString());
-        /*
-        // REQUEST QUEUE MANAGEMENT
-        // AMS 10/29/2024 - Changing this; it used to check play history, but that isn't necessarily accurate
-        //                  because if a song that was already played gets requested, it'll do a false positive.
-        //                  Checking if it's in the *upcoming* songs should be both more accurate and less expensive.
-        //                  This DOES depend on my "queue length" code being correct, however.
-        // Check request queue to see which songs from it are still upcoming in Automix.
-        // ***AMS*** TODO: Make sure this works even if you request something that already exists way ahead in the queue
-        // Remove them if necessary, so we can correctly assess the length of the request queue.
-        logger.debug("{}: Request queue BEFORE:\n{}", method, requestQueue);
-        List<SongRequest> refreshedQueue = new ArrayList<>();   // temporary list of just whatever from the queue is still upcoming
-        if (!requestQueue.isEmpty()) {
-            //List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
-            List<PlaylistSong> upcoming;
-            try {
-                upcoming = xmlController.getQueue().getPlaylistTracks();
-                boolean stillThere = false;
-                for (SongRequest sr : requestQueue) {
-                    for (PlaylistSong ps : upcoming) {
-                        if (sr.getFilePath().equals(ps.getPath())) {
-                            stillThere = true;
-                            break;
-                        }
-                    }
-                    if (stillThere) {
-                        refreshedQueue.add(sr);
-                    }
-                }
-                // after loop determining what's still there, rebuild the queue with what we've learned
-                requestQueue.clear();
-                requestQueue.addAll(refreshedQueue);
-            } catch (SAXParseException e) {
-                logger.error("{}: Exception occurred while parsing queue - {}", method, e.getMessage());
-            }
-            xmlController.setAdditionalQueueSize(requestQueue.size());
-        }
-        // Add request to queue
-        requestQueue.add(newRequest);
-        logger.debug("{}: Request queue AFTER:\n{}", method, requestQueue);
-         */
-        xmlController.addRequestToQueue(newRequest);
+        // Send request to queue manager
+        xmlController.addRequestToReqQueue(newRequest);
         // Prepare strings
         String decodedPath = URLDecoder.decode(newRequest.getFilePath(), Charset.defaultCharset());
         String sanitizedPath = VDJNetworkControlInterface.sanitizePath(decodedPath);
@@ -131,7 +92,9 @@ public class VDJNetController {
         if (!newRequest.isRated()) {
             scriptBody += " & browsed_song 'rating' 1";
         }
-        //String sanitizedScript = VDJNetworkControlInterface.sanitizeScript(scriptBody);
+        // AMS 10/31/2024 Add a delay after all of the above to hopefully avoid returning the data before VDJ actually knows what it did
+        scriptBody += " & wait 5000ms & browser_window automix";    // I have to add a dummy command at the end for "wait" to work
+        logger.info("{}: Finished script:\n{}", method, scriptBody);
         String result = VDJNetworkControlInterface.doScriptExec(baseUri, scriptBody, token);
         // If it was a previously unrated song AND not online sourced (new upload), refresh database to move it into the main area
         if (!newRequest.isRated() && !sanitizedPath.contains("netsearch")) {
@@ -142,11 +105,12 @@ public class VDJNetController {
             if (res2!=null && res2.getBody().equalsIgnoreCase("true")) {
                 logger.info("{}: Finished VDJ browser refresh script", method);
                 this.xmlController.forceReloadDatabase();
-                logger.info("{}: Finished VDJ database reload", method);
+                logger.debug("{}: Finished VDJ database reload", method);
             } else {
-                logger.info("{}: Refresh didn't work, sorry", method);
+                logger.warn("{}: Refresh didn't work, sorry", method);
             }
         }
+        logger.info("{} Response: {}", method, result);
         // Finish
         return ResponseEntity.ok(result);
     }
