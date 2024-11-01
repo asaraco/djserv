@@ -103,7 +103,7 @@ public class VDJNetController {
             // AMS 10/27/2024 - Trying to force an update server-side before trying to get data client-side
             ResponseEntity<String> res2 = (ResponseEntity<String>) refreshSongBrowser();
             if (res2!=null && res2.getBody().equalsIgnoreCase("true")) {
-                logger.info("{}: Finished VDJ browser refresh script", method);
+                logger.debug("{}: Finished VDJ browser refresh script", method);
                 this.xmlController.forceReloadDatabase();
                 logger.debug("{}: Finished VDJ database reload", method);
             } else {

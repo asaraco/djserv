@@ -103,31 +103,32 @@ public class XmlController {
     // Remove them if necessary, so we can correctly assess the length of the request queue.
     public void checkReqQueueForCompletedRequests() {
         String method = "checkReqQueueForCompletedRequests";
-        logger.info("{}: Request queue BEFORE:\n{}", method, requestQueue);
+        logger.trace("{}: Request queue BEFORE:\n{}", method, requestQueue);
         List<SongRequest> refreshedQueue = new ArrayList<>();   // temporary list of just whatever from the queue is still upcoming
         //List<PlaylistSong> alreadyPlayed = xmlController.getPlayHistory().getPlaylistTracks();
-        logger.info("{}: Truncated automix queue:\n{}", method, truncatedAutomixQueue);
+        logger.trace("{}: Truncated automix queue:\n{}", method, truncatedAutomixQueue);
         boolean stillThere = false;
         // Remove first song in a temp version of the queue since that's the one currently playing
-
+        int length = truncatedAutomixQueue.size();
+        List<PlaylistSong> taqWithoutFirst = truncatedAutomixQueue.subList(1, length);
         for (SongRequest sr : requestQueue) {
-            for (PlaylistSong ps : truncatedAutomixQueue) {
-                logger.info("{}: {} == {} ?", method, sr.getFilePath(), ps.getPath());
+            for (PlaylistSong ps : taqWithoutFirst) {
+                logger.trace("{}: {} == {} ?", method, sr.getFilePath(), ps.getPath());
                 if (sr.getFilePath().equals(ps.getPath())) {
                     stillThere = true;
-                    logger.info("{}: Song {} is still there.", method, ps.getPath());
+                    logger.trace("{}: Song {} is still there.", method, ps.getPath());
                     break;
                 }
             }
             if (stillThere) {
-                logger.info("Still there.");
+                logger.trace("Still there.");
                 refreshedQueue.add(sr);
             }
         }
         // after loop determining what's still there, rebuild the queue with what we've learned
         requestQueue.clear();
         requestQueue.addAll(refreshedQueue);
-        logger.info("{}: Request queue after cleanup:\n{}", method, requestQueue);
+        logger.trace("{}: Request queue after cleanup:\n{}", method, requestQueue);
     }
 
     /**
@@ -138,18 +139,18 @@ public class XmlController {
      */
     public void setAutomixQueueSize(int additionalSongs) {
         truncateQueueSize = this.truncateQueueBase + additionalSongs;
-        logger.info("ADDING TO QUEUE SIZE: {} + {} = {}", this.truncateQueueBase, additionalSongs, truncateQueueSize);
+        logger.debug("ADDING TO QUEUE SIZE: {} + {} = {}", this.truncateQueueBase, additionalSongs, truncateQueueSize);
     }
 
     public void addRequestToReqQueue(SongRequest newRequest) {
         String method = "addRequestToReqQueue";
-        logger.info("{}: REQUESTED: {}", method, newRequest.toString());
+        logger.trace("{}: REQUESTED: {}", method, newRequest.toString());
         // REQUEST QUEUE MANAGEMENT
         checkReqQueueForCompletedRequests();
-        logger.info("{}: CLEANED QUEUE, SIZE IS: {}", method, requestQueue.size());
+        logger.trace("{}: CLEANED QUEUE, SIZE IS: {}", method, requestQueue.size());
         // Add request to queue
         requestQueue.add(newRequest);
-        logger.info("{}: ADDED TO REQUEST QUEUE, NEW SIZE IS: {}", method, requestQueue.size());
+        logger.trace("{}: ADDED TO REQUEST QUEUE, NEW SIZE IS: {}", method, requestQueue.size());
         this.setAutomixQueueSize(requestQueue.size());
     }
 
@@ -239,7 +240,7 @@ public class XmlController {
         if (allTracks==null) {
             reloadDatabase();
         }
-        logger.info("newDays = {}", newDays);
+        logger.debug("newDays = {}", newDays);
         return allTracks.stream().filter(
                 e -> e.getRating()==0
                         && e.getFilePath().contains("LANtrax")
@@ -268,7 +269,7 @@ public class XmlController {
         if (allTracks==null) {
             reloadDatabase();
         }
-        return allTracks.stream().filter(e -> e.getRating()>0).filter(e -> e.getYear()>=(thisYear-1)).toList();
+        return allTracks.stream().filter(e -> e.getRating()>0).filter(e -> e.getYear()>=(thisYear-0)).toList();
     }
 
     /**
@@ -279,7 +280,7 @@ public class XmlController {
     @PostConstruct
     @GetMapping("/getQueue")
     public PlaylistQueue getQueue() throws SAXParseException, IOException {
-        logger.info("GET AUTOMIX QUEUE");
+        logger.trace("GET AUTOMIX QUEUE");
         // Get queue from file
         // AMS 10/2024 - For reasons I can't quite figure out we have to do this differently from the others to avoid 'Improper end of file' exceptions.
         //VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(new StreamSource(automixQueue));
@@ -288,7 +289,7 @@ public class XmlController {
         VirtualFolder vdjfolder = (VirtualFolder) marshaller.unmarshal(aq);
         reader.close();
         // Truncate to just the ones we want to display
-        logger.debug("Truncating Queue to {}", truncateQueueSize);
+        logger.trace("Truncating Queue to {}", truncateQueueSize);
         List<PlaylistSong> shortList = vdjfolder.getSongs().subList(0,truncateQueueSize);
         // Get current track duration
         double duration = shortList.get(0).getSonglength();

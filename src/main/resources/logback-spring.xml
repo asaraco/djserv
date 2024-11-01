@@ -34,7 +34,7 @@
     </root>
 
     <!-- LOG "com.legendarylan*" at TRACE level -->
-    <logger name="com.legendarylan" level="trace" additivity="false">
+    <logger name="com.legendarylan" level="info" additivity="false">
         <appender-ref ref="RollingFile" />
         <appender-ref ref="Console" />
     </logger>
