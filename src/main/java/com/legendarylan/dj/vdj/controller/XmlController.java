@@ -302,6 +302,15 @@ public class XmlController {
         checkReqQueueForCompletedRequests();
         this.setAutomixQueueSize(requestQueue.size());
         shortList = shortList.subList(0,truncateQueueSize);
+        // AMS 11/5/2025 - Flag requested songs
+        shortList.forEach(ps -> {
+           for (SongRequest sr : requestQueue) {
+               if (ps.getPath().equals(sr.getFilePath())) {
+                   ps.setRequested(true);
+                   ps.setRequestedBy(sr.getUserid());
+               }
+           }
+        });
         // Finalize returned queue object
         PlaylistQueue pq = new PlaylistQueue(this.dbOutdated, duration, trackProgress, timeRemaining);
         pq.setName("Automix Queue");

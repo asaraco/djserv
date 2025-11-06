@@ -5,6 +5,7 @@ public class SongRequest {
     String artist;
     String title;
     boolean rated;
+    String userid;
 
     @Override
     public String toString() {
@@ -17,7 +18,9 @@ public class SongRequest {
         sb.append(" 'title': ");
         sb.append("'").append(this.getTitle()).append("', ");
         sb.append("'rated': ");
-        sb.append("'").append(this.isRated()).append("'");
+        sb.append("'").append(this.isRated()).append("', ");
+        sb.append("'userid': ");
+        sb.append("'").append(this.getUserid()).append("'");
         sb.append("}");
         //return "{'filePath': '" + this.getFilePath() + "'}";
         return sb.toString();
@@ -52,5 +55,13 @@ public class SongRequest {
 
     public void setRated(boolean rated) {
         this.rated = rated;
+    }
+
+    public String getUserid() {
+        return userid;
+    }
+
+    public void setUserid(String userid) {
+        this.userid = userid;
     }
 }

@@ -32,6 +32,8 @@ public class PlaylistSong {
 
     // Custom fields
     private Track track;
+    private boolean requested;
+    private String requestedBy;
 
     public Track getTrack() throws FileNotFoundException {
         List<Track> allTracks = XmlController.getFullDbSongs();
@@ -94,4 +96,20 @@ public class PlaylistSong {
     @XmlAttribute(name="size")
     public int getSize() {  return size;    }
     public void setSize(int size) { this.size = size;   }
+
+    public boolean isRequested() {
+        return requested;
+    }
+
+    public void setRequested(boolean requested) {
+        this.requested = requested;
+    }
+
+    public String getRequestedBy() {
+        return requestedBy;
+    }
+
+    public void setRequestedBy(String requestedBy) {
+        this.requestedBy = requestedBy;
+    }
 }
