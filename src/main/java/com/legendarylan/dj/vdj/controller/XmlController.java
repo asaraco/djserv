@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Controller class with REST endpoints pertaining to
@@ -88,6 +89,11 @@ public class XmlController {
         VirtualDJDatabase dbC = (VirtualDJDatabase) marshaller.unmarshal(new StreamSource(vdjDatabaseC));
         allTracks.addAll(dbC.getSongs());
         logger.debug("Database reloaded: {} tracks", allTracks.size());
+        try {
+            markPlayedTracks();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<SongRequest> getRequestQueue() {
@@ -315,6 +321,7 @@ public class XmlController {
         PlaylistQueue pq = new PlaylistQueue(this.dbOutdated, duration, trackProgress, timeRemaining);
         pq.setName("Automix Queue");
         pq.setPlaylistTracks(shortList);
+        logger.info("Queue: {}", pq.getPlaylistTracks());
         return pq;
     }
 
@@ -354,6 +361,19 @@ public class XmlController {
         p.setName("Last Played");
         p.setPlaylistTracks(pSongs);
         return p;
+    }
+
+    private void markPlayedTracks() throws IOException {
+        if (this.getPlayHistory()!=null) {
+            List<Track> historyTracks = this.getPlayHistory().getPlaylistTracks().stream().map(playlistSong -> {
+                try {
+                    return playlistSong.getTrack();
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }).toList();
+            historyTracks.forEach(ht -> ht.setAlreadyPlayed(true));
+        }
     }
 
 }

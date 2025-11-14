@@ -45,6 +45,7 @@ public class Track {
     private String sortArtist;
     private boolean onlineSource;
     private LocalDateTime firstSeen;
+    private boolean alreadyPlayed;
 
     public Track() {
         this.id = idCounter;
@@ -267,5 +268,13 @@ public class Track {
 
     public void setComposer(String composer) {
         this.composer = composer;
+    }
+
+    public boolean isAlreadyPlayed() {
+        return alreadyPlayed;
+    }
+
+    public void setAlreadyPlayed(boolean alreadyPlayed) {
+        this.alreadyPlayed = alreadyPlayed;
     }
 }
