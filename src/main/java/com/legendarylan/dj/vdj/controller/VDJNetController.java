@@ -72,7 +72,7 @@ public class VDJNetController {
     ResponseEntity<?> requestDirect(@RequestBody SongRequest newRequest) throws IOException {
         String method = "requestDirect";
         logger.trace("{}: ENTER", method);
-        logger.info("REQUESTED: " + newRequest.toString());
+        logger.info("REQUESTED: {}", newRequest.toString());
         // Send request to queue manager
         xmlController.addRequestToReqQueue(newRequest);
         // Prepare strings
@@ -97,9 +97,8 @@ public class VDJNetController {
         logger.info("{}: Finished script:\n{}", method, scriptBody);
         String result = VDJNetworkControlInterface.doScriptExec(baseUri, scriptBody, token);
         // If it was a previously unrated song AND not online sourced (new upload), refresh database to move it into the main area
-        if (!newRequest.isRated() && !sanitizedPath.contains("netsearch")) {
-            //boolean reload = this.xmlController.forceReloadDatabase();
-            //logger.debug("{}: Reload complete", method);
+        //if (!newRequest.isRated() && !sanitizedPath.contains("netsearch")) {  // AMS 11/15/2025 Want to try this for netsearches too
+        if (!newRequest.isRated()) {
             // AMS 10/27/2024 - Trying to force an update server-side before trying to get data client-side
             ResponseEntity<String> res2 = (ResponseEntity<String>) refreshSongBrowser();
             if (res2!=null && res2.getBody().equalsIgnoreCase("true")) {

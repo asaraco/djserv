@@ -35,6 +35,19 @@ public class PlaylistSong {
     private boolean requested;
     private String requestedBy;
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        try {
+            sb.append(this.getTrack().getTitle());
+            if (this.track.getArtist()!=null) sb.append(" - ").append(this.track.getArtist());
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        if (requested) sb.append(" (Requested by ").append(requestedBy).append(")");
+        return sb.toString();
+    }
+
     public Track getTrack() throws FileNotFoundException {
         List<Track> allTracks = XmlController.getFullDbSongs();
         for (Track t: allTracks) {
