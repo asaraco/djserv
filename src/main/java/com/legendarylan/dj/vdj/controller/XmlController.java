@@ -90,11 +90,6 @@ public class XmlController {
         allTracks.addAll(dbC.getSongs());
         logger.debug("Database reloaded: {} tracks", allTracks.size());
         this.reloadQueue();
-        try {
-            markPlayedTracks();
-        } catch (IOException | SAXParseException e) {
-            logger.error(e.getMessage());   // This isn't really crucial functionality, I"m okay with swallowing these exceptions
-        }
     }
 
     public List<SongRequest> getRequestQueue() {
@@ -325,6 +320,12 @@ public class XmlController {
         pq.setName("Automix Queue");
         pq.setPlaylistTracks(shortList);
         logger.info("Queue: {}", pq.getPlaylistTracks());
+        // AMS 11/16/2025 - Mark played tracks according to refreshed history
+        try {
+            if (allTracks!=null) markPlayedTracks(pq);
+        } catch (SAXParseException e) {
+            logger.error(e.getMessage());   // This isn't really crucial functionality, I"m okay with swallowing these exceptions
+        }
         return pq;
     }
 
@@ -363,38 +364,29 @@ public class XmlController {
         }
         p.setName("Last Played");
         p.setPlaylistTracks(pSongs);
+        // AMS 11/16/2025 - Mark played tracks according to refreshed history
+        try {
+            if (allTracks!=null) markPlayedTracks(p);
+        } catch (SAXParseException e) {
+            logger.error(e.getMessage());   // This isn't really crucial functionality, I"m okay with swallowing these exceptions
+        }
         return p;
     }
 
     /**
      * Iterate through already-played and upcoming tracks.
      * Set "already played" flag to true.
-     * @throws IOException
      * @throws SAXParseException
      */
-    private void markPlayedTracks() throws IOException, SAXParseException {
-        // Play History
-        if (this.getPlayHistory()!=null && this.getPlayHistory().getPlaylistTracks()!=null && !this.getPlayHistory().getPlaylistTracks().isEmpty()) {
-            List<Track> historyTracks = this.getPlayHistory().getPlaylistTracks().stream().map(playlistSong -> {
-                try {
-                    return playlistSong.getTrack();
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }).toList();
-            historyTracks.forEach(ht -> ht.setAlreadyPlayed(true));
-        }
-        //Play Queue
-        if (this.getQueue()!=null && this.getQueue().getPlaylistTracks()!=null && !this.getQueue().getPlaylistTracks().isEmpty()) {
-            List<Track> queueTracks = this.getQueue().getPlaylistTracks().stream().map(playlistSong -> {
-                try {
-                    return playlistSong.getTrack();
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }).toList();
-            queueTracks.forEach(qt -> qt.setAlreadyPlayed(true));
-        }
+    private void markPlayedTracks(Playlist pl) throws SAXParseException {
+        List<Track> historyTracks = pl.getPlaylistTracks().stream().map(playlistSong -> {
+            try {
+                return playlistSong.getTrack();
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
+        historyTracks.forEach(ht -> ht.setAlreadyPlayed(true));
     }
 
 }
