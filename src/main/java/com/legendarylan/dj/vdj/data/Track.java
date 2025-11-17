@@ -243,7 +243,7 @@ public class Track {
     }
 
     public boolean isOnlineSource() {
-        return this.getLink()!=null;
+        return this.getLink()!=null && this.getLink().getNetSearch()!=null;
     }
 
     public LocalDateTime getFirstSeen() {
