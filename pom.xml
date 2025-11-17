@@ -12,7 +12,7 @@
 	
 	<groupId>com.legendarylan</groupId>
 	<artifactId>djserv</artifactId>
-	<version>1.3.0</version>
+	<version>1.5.0</version>
 	<name>legendary-dj</name>
 	<description>Legendary DJ Web</description>
 	<properties>
