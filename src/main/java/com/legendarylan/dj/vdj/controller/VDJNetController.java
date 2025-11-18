@@ -1,36 +1,33 @@
 package com.legendarylan.dj.vdj.controller;
 
-import com.legendarylan.dj.vdj.data.PlaylistSong;
 import com.legendarylan.dj.vdj.data.SongRequest;
-import com.legendarylan.dj.vdj.data.Track;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.xml.sax.SAXParseException;
 
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Controller class containing REST endpoints
  * providing access to the VirtualDJ "Network Control" plugin.
  */
 @RestController
-@CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.localhost-ip}:80", "http://localhost:80"})
+@CrossOrigin({"http://${app.legendarydj.vdj-ip}:8080", "http://${app.legendarydj.vdj-ip}:4200", "http://${app.legendarydj.vdj-ip}:80",
+                "http://${app.legendarydj.webserver-ip}:80", "http://${app.legendarydj.webserver-ip}:4200",
+                "http://localhost:80", "http://localhost:4200" })
 public class VDJNetController {
     private static Logger logger = LogManager.getLogger(VDJNetController.class);
     private final XmlController xmlController;
 
     //private static List<SongRequest> requestQueue = new ArrayList<>();
 
-    @Value("${app.legendarydj.localhost-ip:localhost}")
-    private String localhostIp;
+    @Value("${app.legendarydj.vdj-ip:localhost}")
+    private String vdjIp;
     @Value("${app.legendarydj.file-path:L:\\LANtrax}")
     private String filePath;
     @Value("${app.vdj.networkcontrol.token}")
@@ -47,8 +44,8 @@ public class VDJNetController {
 
     @PostConstruct
     private void initialize() {
-        this.baseUri = "http://"+localhostIp+":8082";
-        logger.debug("INIT: localhostIp={}",localhostIp);
+        this.baseUri = "http://"+ vdjIp +":8082";
+        logger.debug("INIT: vdjIp={}", vdjIp);
         logger.debug("INIT: filePath={}",filePath);
         logger.debug("INIT: baseUri={}", baseUri);
         logger.debug("INIT: token={}", token);

@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200"})
+@CrossOrigin({"http://${app.legendarydj.vdj-ip}:8080", "http://${app.legendarydj.vdj-ip}:4200", "http://${app.legendarydj.vdj-ip}:80",
+		"http://${app.legendarydj.webserver-ip}:80", "http://${app.legendarydj.webserver-ip}:4200",
+		"http://localhost:80", "http://localhost:4200" })
 public class Controllers {
 	private static Logger logger = LogManager.getLogger(Controllers.class);
 

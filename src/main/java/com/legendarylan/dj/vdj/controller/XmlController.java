@@ -22,14 +22,15 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Controller class with REST endpoints pertaining to
  * VirtualDJ database & playlist access.
  */
 @RestController
-@CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.localhost-ip}:80", "http://localhost:80"})
+@CrossOrigin({"http://${app.legendarydj.vdj-ip}:8080", "http://${app.legendarydj.vdj-ip}:4200", "http://${app.legendarydj.vdj-ip}:80",
+        "http://${app.legendarydj.webserver-ip}:80", "http://${app.legendarydj.webserver-ip}:4200",
+        "http://localhost:80", "http://localhost:4200" })
 public class XmlController {
     private static Logger logger = LogManager.getLogger(XmlController.class);
     @Autowired
@@ -42,8 +43,8 @@ public class XmlController {
 
     private boolean dbOutdated = false;
 
-    @Value("${app.legendarydj.localhost-ip:localhost}")
-    private String localhostIp;
+    @Value("${app.legendarydj.vdj-ip:localhost}")
+    private String vdjIp;
     @Value("${app.vdj.networkcontrol.token}")
     private String token;
     private String baseUri;
@@ -54,17 +55,20 @@ public class XmlController {
     private static int truncateQueueSize;
 
     //TODO: Default to some kind of empty list if files don't exist
-    private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
+    //private static File vdjDatabaseC = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\database.xml");
+    private static File vdjDatabaseC = new File("\\\\lemmtop11\\VirtualDJ\\database.xml");
     private static File vdjDatabaseL = new File("L:\\VirtualDJ\\database.xml");
-    private static File automixQueue = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\Sideview\\automix.vdjfolder");
-    private static File historyPath = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\History\\");
+    //private static File automixQueue = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\Sideview\\automix.vdjfolder");
+    private static File automixQueue = new File("\\\\lemmtop11\\VirtualDJ\\Sideview\\automix.vdjfolder");
+    //private static File historyPath = new File("C:\\Users\\lemmh\\AppData\\Local\\VirtualDJ\\History\\");
+    private static File historyPath = new File("\\\\lemmtop11\\VirtualDJ\\History\\");
     private static File historyPlaylistFile;
 
     @PostConstruct
     private void initialize() {
-        this.baseUri = "http://"+this.localhostIp+":8082";
+        this.baseUri = "http://"+this.vdjIp +":8082";
         truncateQueueSize = this.truncateQueueBase;
-        logger.debug("INIT: localhostIp={}",localhostIp);
+        logger.debug("INIT: vdjIp={}", vdjIp);
         logger.debug("INIT: baseUri={}", baseUri);
         logger.debug("INIT: token={}", token);
         logger.debug("INIT: newDays={}", newDays);

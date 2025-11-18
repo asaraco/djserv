@@ -20,7 +20,7 @@ import java.util.List;
  * providing access to the VirtualDJ "Ask the DJ" API.
  */
 @RestController
-@CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.localhost-ip}:80", "http://localhost:80"})
+@CrossOrigin({"http://${app.legendarydj.vdj-ip}:8080", "http://${app.legendarydj.vdj-ip}:4200", "http://localhost:4200", "http://${app.legendarydj.vdj-ip}:80", "http://localhost:80"})
 public class VDJAskTheDJController {
     private static Logger logger = LogManager.getLogger(VDJAskTheDJController.class);
     private final XmlController xmlController;

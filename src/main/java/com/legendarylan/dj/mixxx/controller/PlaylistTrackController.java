@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.legendarylan.dj.Const;
 
 @BasePathAwareController
-@CrossOrigin({"http://${app.legendarydj.localhost-ip}:8080", "http://${app.legendarydj.localhost-ip}:4200", "http://localhost:4200"})
+@CrossOrigin({"http://${app.legendarydj.vdj-ip}:8080", "http://${app.legendarydj.vdj-ip}:4200", "http://localhost:4200"})
 @ConditionalOnProperty(prefix = "app.legendarydj", name = "mode", havingValue = "mixxx")
 class PlaylistTrackController {
 	@Autowired
