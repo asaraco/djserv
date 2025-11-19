@@ -120,7 +120,14 @@ public class XmlController {
         for (SongRequest sr : requestQueue) {
             for (PlaylistSong ps : taqWithoutFirst) {
                 logger.trace("{}: {} == {} ?", method, sr.getFilePath(), ps.getPath());
+                /*
                 if (sr.getFilePath().equals(ps.getPath())) {
+                    stillThere = true;
+                    logger.trace("{}: Song {} is still there.", method, ps.getPath());
+                    break;
+                }
+                 */
+                if (compareSongs(ps, sr)) {
                     stillThere = true;
                     logger.trace("{}: Song {} is still there.", method, ps.getPath());
                     break;
@@ -310,10 +317,11 @@ public class XmlController {
         shortList = shortList.subList(0,truncateQueueSize);
         // AMS 11/5/2025 - Flag requested songs
         shortList.forEach(ps -> {
-           String psArtistTitle = ps.getArtist() + ps.getTitle();
+           //String psArtistTitle = ps.getArtist() + ps.getTitle();
            for (SongRequest sr : requestQueue) {
-               String srArtistTitle = sr.getArtist() + sr.getTitle();
-               if (psArtistTitle.equals(srArtistTitle)) {
+               //String srArtistTitle = sr.getArtist() + sr.getTitle();
+               //if (psArtistTitle.equals(srArtistTitle) || ps.getPath().equals(sr.getFilePath())) {
+               if (compareSongs(ps, sr)) {
                    ps.setRequested(true);
                    ps.setRequestedBy(sr.getUserid());
                }
@@ -393,4 +401,31 @@ public class XmlController {
         historyTracks.forEach(ht -> ht.setAlreadyPlayed(true));
     }
 
+    /**
+     * Determine if the given PlaylistSong object (derived from VDJ list)
+     * is a match for a given SongRequest object (belongs to request queue, custom implementation)
+     * either by the file path or the artist + title.
+     * File path matching can be spotty due to URL encoding for online requests,
+     * though an attempt is made to work around that with substrings.
+     * @param ps
+     * @param sr
+     * @return
+     */
+    private boolean compareSongs(PlaylistSong ps, SongRequest sr) {
+        String psArtistTitle = ps.getArtist() + ps.getTitle();
+        String srArtistTitle = sr.getArtist() + sr.getTitle();
+        String psPath = ps.getPath();
+        String srPath = sr.getFilePath();
+        // If filepath is from Deezer, it may have weirdly encoded slash characters which will mess up the comparison.
+        // Cut out everything before "dz" (they are typically in the format "netsearch://dz#######")
+        if (psPath.contains("netsearch") && psPath.contains("dz")) {
+            int i = psPath.indexOf("dz");
+            psPath = psPath.substring(i);
+        }
+        if (srPath.contains("netsearch") && srPath.contains("dz")) {
+            int i = srPath.indexOf("dz");
+            srPath = srPath.substring(i);
+        }
+        return (psArtistTitle.equals(srArtistTitle) || psPath.equals(srPath));
+    }
 }
