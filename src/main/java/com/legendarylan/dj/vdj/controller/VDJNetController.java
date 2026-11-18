@@ -87,6 +87,7 @@ public class VDJNetController {
         scriptBody += "automix_add_next \"" + sanitizedPath + "\" & browser_window automix & browser_scroll top & browser_scroll +1 & browser_move +" + queueSize;
         // If song isn't rated yet, rate it (this is important for new uploads to get into the main DB)
         if (!newRequest.isRated()) {
+            scriptBody += " & browsed_file_analyze";    // AMS 11/17/2026
             scriptBody += " & browsed_song 'rating' 1";
         }
         // AMS 10/31/2024 Add a delay after all of the above to hopefully avoid returning the data before VDJ actually knows what it did
@@ -129,6 +130,7 @@ public class VDJNetController {
         String sanitizedPath = VDJNetworkControlInterface.sanitizePath(filePath);
         String scriptBody = "browser_gotofolder \"" + sanitizedPath + "\" & browser_sort \"-First Seen\" & browser_window 'songs' & browser_scroll top & browsed_file_analyze & wait 50ms & goto_last_folder";
         String sanitizedScript = VDJNetworkControlInterface.sanitizeScript(scriptBody);
+        //logger.info("refreshSongBrowser: sanitizedScript={}", sanitizedScript);
         String result = VDJNetworkControlInterface.doScriptExec(baseUri, sanitizedScript, token);
         // Refresh cached database
         this.xmlController.forceReloadDatabase();
